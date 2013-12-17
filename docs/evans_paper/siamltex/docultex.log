@@ -1,0 +1,135 @@
+This is pdfTeX, Version 3.1415926-2.3-1.40.12 (TeX Live 2011) (format=pdflatex 2011.7.3)  7 MAY 2013 12:03
+entering extended mode
+ \write18 enabled.
+ %&-line parsing enabled.
+**docultex.tex
+(./docultex.tex
+LaTeX2e <2009/09/24>
+Babel <v3.8l> and hyphenation patterns for english, dumylang, nohyphenation, ge
+rman-x-2009-06-19, ngerman-x-2009-06-19, afrikaans, ancientgreek, ibycus, arabi
+c, armenian, basque, bulgarian, catalan, pinyin, coptic, croatian, czech, danis
+h, dutch, ukenglish, usenglishmax, esperanto, estonian, ethiopic, farsi, finnis
+h, french, galician, german, ngerman, swissgerman, monogreek, greek, hungarian,
+ icelandic, assamese, bengali, gujarati, hindi, kannada, malayalam, marathi, or
+iya, panjabi, tamil, telugu, indonesian, interlingua, irish, italian, kurmanji,
+ lao, latin, latvian, lithuanian, mongolian, mongolianlmc, bokmal, nynorsk, pol
+ish, portuguese, romanian, russian, sanskrit, serbian, serbianc, slovak, sloven
+ian, spanish, swedish, turkish, turkmen, ukrainian, uppersorbian, welsh, loaded
+.
+(./siamltex.cls
+Document Class: siamltex 1996/10/11 v1.2 LaTeX document class
+(/usr/local/texlive/2011/texmf-dist/tex/latex/base/leqno.clo
+File: leqno.clo 1998/08/17 v1.1c Standard LaTeX option (left equation numbers)
+)
+(/usr/local/texlive/2011/texmf-dist/tex/latex/base/leqno.clo
+File: leqno.clo 1998/08/17 v1.1c Standard LaTeX option (left equation numbers)
+) (./siam10.clo
+File: siam10.clo 1994/10/01 v1.0 SIAM LaTeX file (size option)
+)
+\c@section=\count79
+\c@subsection=\count80
+\c@subsubsection=\count81
+\c@paragraph=\count82
+\c@subparagraph=\count83
+\c@rmnum=\count84
+\c@muni=\count85
+\c@theorem=\count86
+\c@figure=\count87
+\c@table=\count88
+\abovecaptionskip=\skip41
+\belowcaptionskip=\skip42
+\bibindent=\dimen102
+)
+(./docultex.aux)
+\openout1 = `docultex.aux'.
+
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 57.
+LaTeX Font Info:    ... okay on input line 57.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 57.
+LaTeX Font Info:    ... okay on input line 57.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 57.
+LaTeX Font Info:    ... okay on input line 57.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 57.
+LaTeX Font Info:    ... okay on input line 57.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 57.
+LaTeX Font Info:    ... okay on input line 57.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 57.
+LaTeX Font Info:    ... okay on input line 57.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <7> on input line 58.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <5> on input line 58.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <8> on input line 58.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <6> on input line 58.
+LaTeX Font Info:    Try loading font information for OMS+cmr on input line 125.
+
+ (/usr/local/texlive/2011/texmf-dist/tex/latex/base/omscmr.fd
+File: omscmr.fd 1999/05/25 v2.5h Standard LaTeX font definitions
+)
+LaTeX Font Info:    Font shape `OMS/cmr/m/n' in size <10> not available
+(Font)              Font shape `OMS/cmsy/m/n' tried instead on input line 125.
+
+Underfull \hbox (badness 1924) in paragraph at lines 122--134
+\OT1/cmr/m/n/10 pack-age based on \OT1/cmtt/m/n/10 article.cls\OT1/cmr/m/n/10 ;
+ \OT1/cmtt/m/n/10 siam10.clo\OT1/cmr/m/n/10 , for the ten-point size op-tion;
+ []
+
+[1
+
+{/usr/local/texlive/2011/texmf-var/fonts/map/pdftex/updmap/pdftex.map}]
+[2] [3]
+Underfull \hbox (badness 10000) in paragraph at lines 338--351
+\OT1/cmr/m/n/10 later). The pack-age []\OT1/cmtt/m/n/10 amsfonts \OT1/cmr/m/n/1
+0 can be in-cluded with the com-mand
+ []
+
+[4]
+Overfull \hbox (1.14305pt too wide) in paragraph at lines 411--419
+\OT1/cmr/m/n/10 propo-si-tions are cov-ered in the SIAM macros by the theorem-e
+nvironments []\OT1/cmtt/m/n/10 {theorem}\OT1/cmr/m/n/10 ,
+ []
+
+
+Overfull \hbox (1.36716pt too wide) in paragraph at lines 446--450
+[]\OT1/cmr/m/n/10 Proofs are han-dled with the []\OT1/cmtt/m/n/10 \begin{proof}
+ []\end{proof} \OT1/cmr/m/n/10 en-vi-ron-ment. A ``QED''
+ []
+
+[5] [6] [7] [8] (./docultex.aux) ) 
+Here is how much of TeX's memory you used:
+ 357 strings out of 493633
+ 3707 string characters out of 3143378
+ 57135 words of memory out of 3000000
+ 3722 multiletter control sequences out of 15000+200000
+ 8026 words of font info for 29 fonts, out of 3000000 for 9000
+ 831 hyphenation exceptions out of 8191
+ 26i,9n,20p,189b,352s stack positions out of 5000i,500n,10000p,200000b,50000s
+</usr/local/texlive/2011/texmf-dist/fonts/typ
+e1/public/amsfonts/cm/cmbx10.pfb></usr/local/texlive/2011/texmf-dist/fonts/type
+1/public/amsfonts/cm/cmbx7.pfb></usr/local/texlive/2011/texmf-dist/fonts/type1/
+public/amsfonts/cm/cmbx8.pfb></usr/local/texlive/2011/texmf-dist/fonts/type1/pu
+blic/amsfonts/cm/cmcsc10.pfb></usr/local/texlive/2011/texmf-dist/fonts/type1/pu
+blic/amsfonts/cm/cmmi10.pfb></usr/local/texlive/2011/texmf-dist/fonts/type1/pub
+lic/amsfonts/cm/cmmi6.pfb></usr/local/texlive/2011/texmf-dist/fonts/type1/publi
+c/amsfonts/cm/cmmi7.pfb></usr/local/texlive/2011/texmf-dist/fonts/type1/public/
+amsfonts/cm/cmmi8.pfb></usr/local/texlive/2011/texmf-dist/fonts/type1/public/am
+sfonts/cm/cmr10.pfb></usr/local/texlive/2011/texmf-dist/fonts/type1/public/amsf
+onts/cm/cmr6.pfb></usr/local/texlive/2011/texmf-dist/fonts/type1/public/amsfont
+s/cm/cmr7.pfb></usr/local/texlive/2011/texmf-dist/fonts/type1/public/amsfonts/c
+m/cmr8.pfb></usr/local/texlive/2011/texmf-dist/fonts/type1/public/amsfonts/cm/c
+msy10.pfb></usr/local/texlive/2011/texmf-dist/fonts/type1/public/amsfonts/cm/cm
+sy6.pfb></usr/local/texlive/2011/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy
+7.pfb></usr/local/texlive/2011/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.
+pfb></usr/local/texlive/2011/texmf-dist/fonts/type1/public/amsfonts/cm/cmti10.p
+fb></usr/local/texlive/2011/texmf-dist/fonts/type1/public/amsfonts/cm/cmti8.pfb
+></usr/local/texlive/2011/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt10.pfb>
+</usr/local/texlive/2011/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt8.pfb>
+Output written on docultex.pdf (8 pages, 252711 bytes).
+PDF statistics:
+ 111 PDF objects out of 1000 (max. 8388607)
+ 80 compressed objects within 1 object stream
+ 0 named destinations out of 1000 (max. 500000)
+ 1 words of extra memory for PDF output out of 10000 (max. 10000000)
+

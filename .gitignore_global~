@@ -6,10 +6,6 @@
 *.exe
 *.o
 *.so
-*.aux
-*.log
-*.bbl
-*.blg
 
 # Packages #
 ############
