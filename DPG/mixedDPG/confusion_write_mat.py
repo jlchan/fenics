@@ -1,6 +1,7 @@
 from dolfin import *
 from numpy import array, argsort, amax
 from math import ceil
+import helper_functions as help
 
 # Create mesh and define function space
 pU = 1
@@ -92,26 +93,8 @@ PP = P.array()
 #print "VDofs = ", Vdofs
 #print "A = ", AA
 
-def dumpMat(name, AA):
-    f = open("read"+name+".m", 'w')
-    f.write("%s = sparse(%d,%d);\n" % (name,AA.shape[0],AA.shape[1]))
-    for i in range(AA.shape[0]):
-        for j in range(AA.shape[1]):
-           if abs(AA[i,j]) > 10e-10:
-               f.write("%s (%d, %d) = %e;\n " % (name,i+1,j+1,AA[i,j]))
-
-def dumpVec(name, b):
-	f = open("read"+name+".m", 'w')
-	for i in range(len(b)):
-		f.write("%s (%d) = %d;\n " % (name,i+1,b[i]))
-
-def dumpdVec(name, b):
-	f = open("read"+name+".m", 'w')
-	for i in range(len(b)):
-		f.write("%s (%d) = %e;\n " % (name,i+1,b[i]))
-
-dumpMat("A",AA)
-dumpdVec("b",bb)
-dumpVec("Ui",Udofs)
-dumpVec("Vi",Vdofs)
-dumpMat("P",PP)
+dumpMat("readA.m",AA)
+dump_d_vec("readb.m",bb)
+dump_i_ec("readUi.m",Udofs)
+dump_i_ec("readVi.m",Vdofs)
+dumpMat("readP.m",PP)
