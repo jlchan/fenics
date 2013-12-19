@@ -2,37 +2,37 @@ from dolfin import *
 from numpy import array, argsort, amax
 from math import ceil
 
+import helper_functions as help
+import helper_confusion as chelp
+
 useBulkChasing = True
 useAdaptivity = False
-numRefs = 4
+numRefs = 6
 
 # Create mesh and definene function space
 pU = 1
-pV = 4
-N = 8
+pV = 2
+N = 4
 mesh = UnitSquareMesh(N,N)
 
 # define problem params
-eps = 1e-3
+eps = 1e-2
 print "eps = ", eps
 beta = Expression(('1.0','0.0'))
-ue = Expression('(exp(r1*(x[0]-1))-exp(r2*(x[0]-1)))/(exp(-r1)-exp(-r2))*sin(pi*x[1])',eps = eps,pi = 2*acos(0.0), r1 = (-1+sqrt(1+4*pi*pi*eps*eps))/(-2*eps),r2 = (-1-sqrt(1+4*pi*pi*eps*eps))/(-2*eps))
+ue = chelp.erikkson_solution(eps)
 
 zero = Expression('0.0')
 
 def u0_boundary(x, on_boundary):
 	return on_boundary
 def outflow(x):
-	return abs(x[0]-1) < 1E-14 or abs(x[1]-1) < 1E-14 or abs(x[1]) < 1E-14
+	return abs(x[0]-1) < 1E-14 #or abs(x[1]-1) < 1E-14 or abs(x[1]) < 1E-14
+def edges(x):
+	return abs(x[1]-1) < 1E-14 or abs(x[1]) < 1E-14
 def inflow(x):
 	return outflow(x) == False;
 
-class Inflow(Expression):
-	def eval(self, values, x):
-		values[0] = 0.0
-		if abs(x[0]) < 1E-14:
-			values[0] = 1.0
-infl = Inflow()
+infl = chelp.Inflow()
 outfl = 1-infl
 
 hVec = []
@@ -52,19 +52,20 @@ for refIndex in xrange(numRefs):
 	bcs = []
 	bcs.append(DirichletBC(E.sub(1), zero, outflow)) # error boundary condition
 	bcs.append(DirichletBC(E.sub(0), ue, inflow)) # boundary conditions on u
+#	bcs.append(DirichletBC(E.sub(0), ue, edges)) # boundary conditions on u
+#	bcs.append(DirichletBC(E.sub(0), ue, outflow)) # boundary conditions on u
 
 	def ip(e,v):
 		return inner(dot(beta,grad(e)),dot(beta,grad(v)))*dx + eps*inner(grad(e),grad(v))*dx #+ eps*inner(infl*e,v)*ds + eps*inner(outfl*dot(grad(e),n),dot(grad(v),n))*ds
 	
 	def b(u,v):
-		return inner(-u,dot(beta,grad(v)))*dx + eps*inner(grad(u),grad(v))*dx - inner(eps*infl*dot(grad(u),n),v)*ds - inner(outfl*dot(beta,n)*u,v)*ds + inner(eps*outfl*u,dot(grad(v),n))*ds
+		return inner(-u,dot(beta,grad(v)))*dx + eps*inner(grad(u),grad(v))*dx - inner(eps*infl*dot(grad(u),n),v)*ds - inner(eps*outfl*u,dot(grad(v),n))*ds - inner(eps*outfl*v,dot(grad(u),n))*ds - inner(outfl*dot(beta,n)*u,v)*ds 
 
 	a = b(u,v) + b(du,e) + ip(e,v) #+ eps*inner(outfl*u,du)*ds
 
 	f = Expression('0.0')
 	x = V.cell().x
 	L = inner(f,v)*dx - inner(infl*dot(beta,n)*ue,v)*ds
-#	L = inner(f,v)*dx
 	
 	uSol = Function(E)
 	solve(a==L, uSol, bcs)
@@ -73,8 +74,7 @@ for refIndex in xrange(numRefs):
 	# evaluate element error indicator
 	DG0 = FunctionSpace(mesh, "DG", 0) # element indicator function
 	w = TestFunction(DG0)
-	M = ip(w*e,e)
-	cell_energy = assemble(M)	
+	cell_energy = assemble(ip(w*e,e))	
 
 	# define adaptive strategy
 	cell_markers = MeshFunction("bool", mesh, mesh.topology().dim())
@@ -91,19 +91,16 @@ for refIndex in xrange(numRefs):
 		for c in cells(mesh):
 			cell_markers[c] = cell_energy[c.index()] > factor*maxE
 	
-	#error = (u-ue)**2*dx
-	#Err = sqrt(assemble(error))
-	fineMesh = refine(mesh)
-	fineSpace = FunctionSpace(fineMesh, "Lagrange", pU)
+	fineMesh = chelp.quadrature_refine(mesh,N,4)
+	fineSpace = FunctionSpace(fineMesh, "Lagrange", pU+2)
 	uF = interpolate(u,fineSpace)
-	Err = ue-uF;
-	err = sqrt(assemble(Err**2*dx))
+	err = sqrt(assemble((ue-uF)**2*dx))
 	h = (1.0/N)*.5**float(refIndex)
 	
 	print "on refinement ", refIndex
 	energy = ip(e,e)
 	totalE = sqrt(assemble(energy))
-	print "h, ", h , ", E = ", err, ", e = ", totalE	
+	print "h, ", h , ", L2 error = ", err, ", e = ", totalE	
 	hVec.append(h)
 	errVec.append(err)
 	nDofs.append(U.dofmap().global_dimension())
@@ -113,25 +110,31 @@ for refIndex in xrange(numRefs):
 	else:
 		mesh = refine(mesh)
 	
+
 # Convergence rates
 from math import log as ln  # (log is a dolfin name too - and logg :-)
-print 'h(', 1, ') = ', hVec[0], '; e(',1,') = ', errVec[0],'; energy(',1,') = ', enrgy[0], '; ndofs(',1,')=',nDofs[0]
+#print 'h(', 1, ') = ', hVec[0], '; e(',1,') = ', errVec[0],'; energy(',1,') = ', enrgy[0], '; ndofs(',1,')=',nDofs[0]
+rVec = []
 for i in range(1, len(errVec)):
 	r = ln(errVec[i]/errVec[i-1])/ln(hVec[i]/hVec[i-1])
-	print 'h(', i+1, ') = ', hVec[i], '; e(',i+1,') = ', errVec[i],'; energy(',i+1,') = ', enrgy[i],'; r(',i,') = ', r, '; ndofs(',i+1,')=',nDofs[i]
+	rVec.append(r)
+	#print 'h(', i+1, ') = ', hVec[i], '; e(',i+1,') = ', errVec[i],'; energy(',i+1,') = ', enrgy[i],'; r(',i,') = ', r, '; ndofs(',i+1,')=',nDofs[i]
 
-for i in range(0, len(errVec)):
-	print 'ratio(',i+1,') = ', errVec[i]/(enrgy[i])
+#for i in range(0, len(errVec)):
+	#print 'ratio(',i+1,') = ', errVec[i]/(enrgy[i])
 
+print hVec
+print errVec
+print rVec
 
 # Plot solution
-fineMesh = refine(mesh)
-#fineMesh = refine(fineMesh)
-#fineMesh = refine(fineMesh)
+fineMesh = mesh
+for ref in xrange(p-1):
+	fineMesh = refine(fineMesh)
 fineSpace = FunctionSpace(fineMesh, "Lagrange", 1)
 uF = interpolate(u, fineSpace)
 eF = interpolate(e, fineSpace)
-err = ue-uF
+err = interpolate(ue-uF,fineSpace)
 
 plot(uF)
 #plot(eF)
