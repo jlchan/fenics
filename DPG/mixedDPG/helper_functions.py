@@ -21,12 +21,25 @@ def dump_d_vec(name, b):
 	for i in range(len(b)):
 		f.write("%s (%d) = %e;\n " % (name,i+1,b[i]))
 
+# example: parseArg('--eps',sys,default_val)                
+def parseArg(*arg):
+    argName = arg[0]
+    sys = arg[1]
+    default_val = ''
+    if len(arg)>2:
+        default_val = arg[2]
 
-# example: parseArg('eps',['blah.py', '--eps', '1e-2'])
-def parseArg(argName,argv):
-    inputs, rem = getopt.getopt(argv,'',[argName+'='])
+    argvec = ['eps=','N=','p=','numRefs=']
+    inputs, remainder = getopt.getopt(sys.argv[1:],'',argvec)
+    #print sys.argv
+    #print inputs
+    inputFound = False
     for arg,val in inputs:
-        if arg in ('--'+argName):
+        if arg==argName:
+            inputFound=True
             return val
+    if (inputFound==False):
+        return default_val
 
-
+eps = float(parseArg('--eps',sys,1e-2))
+print eps

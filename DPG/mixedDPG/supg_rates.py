@@ -4,12 +4,14 @@ import helper_confusion as chelp
 
 import sys,getopt
 
-print 'Number of arguments:', len(sys.argv), 'arguments.'
-print 'Argument List:', str(sys.argv)
-p = 1
-N = 4
-numRefs = 1
-eps = 1e-2
+#print 'Number of arguments:', len(sys.argv), 'arguments.'
+#print 'Argument List:', str(sys.argv)
+
+p = int(help.parseArg('--p',sys,1))
+N = int(help.parseArg('--N',sys,4))
+numRefs = int(help.parseArg('--numRefs',sys,1))
+eps = float(help.parseArg('--eps',sys,1e-2))
+
 print "eps = ", eps
 
 # define problem params
