@@ -5,7 +5,7 @@ from dolfin import *
 parameters["std_out_all_processes"] = False;
 
 # Load mesh from file
-N = 32
+N = 16
 mesh = UnitSquareMesh(N,N)
 
 # Define function spaces (P2-P1)
@@ -28,9 +28,11 @@ nu = 1.0/40.0
 Re2 = 2/nu
 lam = Re2 - sqrt(Re2**2 + 4*pi**2)
 ue = Expression(("1-exp(lam*x[0])*cos(2*pi*x[1])","lam/(2*pi)*exp(lam*x[0])*sin(2*pi*x[1])"),pi = pi,lam = lam)
-pe = Expression(".5*exp(2*lam*x[0])", lam=lam)
-ubc = DirichletBC(V, ue,"x[0] > 1.0 - DOLFIN_EPS | x[0] < DOLFIN_EPS")
-pbc = DirichletBC(Q, pe,"on_boundary")
+pe_no_avg = Expression(".5*exp(2*lam*x[0])", lam=lam)
+p_avg = Expression("(exp(2.0*lam) - 1.0)/(4.0*lam)",lam=lam)
+pe = pe_no_avg #- p_avg
+ubc = DirichletBC(V, ue,"on_boundary")
+pbc = DirichletBC(Q, pe,"x[0] > 1.0 - DOLFIN_EPS | x[0] < DOLFIN_EPS")
 bcu = [ubc]
 bcp = [pbc]
 
@@ -91,8 +93,8 @@ while t < T + DOLFIN_EPS:
     begin("Computing pressure correction")
     b2 = assemble(L2)
     [bc.apply(A2, b2) for bc in bcp]
-    #solve(A2, p1.vector(), b2, "gmres", prec)
-    p1.assign(interpolate(pe,Q))
+    solve(A2, p1.vector(), b2, "gmres", prec)
+    #p1.assign(interpolate(pe,Q))
     end()
 
     # Velocity correction

@@ -4,7 +4,7 @@ from dolfin import *
 parameters["std_out_all_processes"] = False;
 
 # Load mesh from file
-N = 16
+N = 32
 p_vel = 2
 mesh = UnitSquareMesh(N,N)
 hh = 1.0/(2.0*N) #circrumscribed circle defn
@@ -20,7 +20,7 @@ v = TestFunction(V)
 q = TestFunction(Q)
 
 # Set parameter values
-dt = .1*hh/(p_vel**2)
+dt = .01#.1*hh/(p_vel**2)
 print "dt = ", dt
 T = 100
 nu = 1.0/40.0
@@ -37,7 +37,9 @@ nu = 1.0/40.0
 Re2 = 2/nu
 lam = Re2 - sqrt(Re2**2 + 4*pi**2)
 ue = Expression(("1-exp(lam*x[0])*cos(2*pi*x[1])","lam/(2*pi)*exp(lam*x[0])*sin(2*pi*x[1])"),pi = pi,lam = lam)
-pe = Expression(".5*exp(2*lam*x[0])", lam=lam)
+pe_no_avg = Expression(".5*exp(2*lam*x[0])", lam=lam)
+p_avg = Expression("(exp(2.0*lam) - 1.0)/(4.0*lam)",lam=lam)
+pe = pe_no_avg #- p_avg
 p_in = Expression("1.0")
 ubc=DirichletBC(V, ue,"on_boundary")
 pbc=DirichletBC(Q, pe,"x[0] > 1.0 - DOLFIN_EPS | x[0] < DOLFIN_EPS")
