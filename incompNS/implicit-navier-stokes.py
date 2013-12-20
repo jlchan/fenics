@@ -1,29 +1,3 @@
-"""This demo program solves the incompressible Navier-Stokes equations
-on an L-shaped domain using Chorin's splitting method."""
-
-# Copyright (C) 2010-2011 Anders Logg
-#
-# This file is part of DOLFIN.
-#
-# DOLFIN is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Lesser General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# DOLFIN is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU Lesser General Public License for more details.
-#
-# You should have received a copy of the GNU Lesser General Public License
-# along with DOLFIN. If not, see <http://www.gnu.org/licenses/>.
-#
-# Modified by Mikael Mortensen 2011
-#
-# First added:  2010-08-30
-# Last changed: 2011-06-30
-
-# Begin demo
 
 from dolfin import *
 
@@ -31,7 +5,7 @@ from dolfin import *
 parameters["std_out_all_processes"] = False;
 
 # Load mesh from file
-N = 16
+N = 32
 mesh = UnitSquareMesh(N,N)
 
 # Define function spaces (P2-P1)
@@ -46,26 +20,23 @@ q = TestFunction(Q)
 
 # Set parameter values
 dt = 0.01
-T = 100
-nu = 0.01
+T = 10
+nu = 1.0/40.0
 
 # Define time-dependent pressure boundary condition
 #p_in = Expression("sin(3.141592*t)", t=0.0)
-p_in = Expression("1.0")                  
-p_out = Expression("0.0")
-
-# Define boundary conditions
-# Define boundary conditions
-noslip  = DirichletBC(V, (0, 0),
-                      "on_boundary && \
-                       (x[0] < DOLFIN_EPS | x[0] > 1.0 - DOLFIN_EPS )")
-inflow  = DirichletBC(Q, p_in, "x[1] > 1.0 - DOLFIN_EPS")
-outflow = DirichletBC(Q, p_out, "x[1] < DOLFIN_EPS")
-bcu = [noslip]
-bcp = [inflow, outflow]
+Re2 = 2/nu
+lam = Re2 - sqrt(Re2**2 + 4*pi**2)
+ue = Expression(("1-exp(lam*x[0])*cos(2*pi*x[1])","lam/(2*pi)*exp(lam*x[0])*sin(2*pi*x[1])"),pi = pi,lam = lam)
+pe = Expression(".5*exp(2*lam*x[0])", lam=lam)
+ubc = DirichletBC(V, ue,"x[0] > 1.0 - DOLFIN_EPS | x[0] < DOLFIN_EPS")
+pbc = DirichletBC(Q, pe,"on_boundary")
+bcu = [ubc]
+bcp = [pbc]
 
 # Create functions to store intermediate values
 u0 = Function(V)
+u0 = interpolate(ue,V)
 u1 = Function(V)
 p1 = Function(Q)
 
@@ -99,12 +70,15 @@ prec = "amg" if has_krylov_solver_preconditioner("amg") else "default"
 ufile = File("results/velocity.pvd")
 pfile = File("results/pressure.pvd")
 
+plot(interpolate(pe,Q), title="Exact Pressure",rescale=True) 
+plot(interpolate(ue,V), title="Exact Velocity",rescale=True) 
+
 # Time-stepping
 t = dt
 while t < T + DOLFIN_EPS:
 
     # Update pressure boundary condition
-    p_in.t = t
+    #p_in.t = t
 
     # Compute tentative velocity step
     begin("Computing tentative velocity")
@@ -117,7 +91,8 @@ while t < T + DOLFIN_EPS:
     begin("Computing pressure correction")
     b2 = assemble(L2)
     [bc.apply(A2, b2) for bc in bcp]
-    solve(A2, p1.vector(), b2, "gmres", prec)
+    #solve(A2, p1.vector(), b2, "gmres", prec)
+    p1.assign(interpolate(pe,Q))
     end()
 
     # Velocity correction
