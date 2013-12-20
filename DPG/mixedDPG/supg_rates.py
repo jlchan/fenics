@@ -7,12 +7,13 @@ import sys,getopt
 #print 'Number of arguments:', len(sys.argv), 'arguments.'
 #print 'Argument List:', str(sys.argv)
 
-p = int(help.parseArg('--p',sys,1))
-N = int(help.parseArg('--N',sys,4))
-numRefs = int(help.parseArg('--numRefs',sys,1))
-eps = float(help.parseArg('--eps',sys,1e-2))
+p = int(help.parseArg('--p',1))
+N = int(help.parseArg('--N',4))
+numRefs = int(help.parseArg('--numRefs',1))
+eps = float(help.parseArg('--eps',1e-2))
+numQRefs = int(help.parseArg('--numQRefs',4))
 
-print "eps = ", eps
+print "args = ", [p,N,numRefs,eps,numQRefs]
 
 # define problem params
 beta = Constant(('1.0','0.0'))
@@ -53,7 +54,7 @@ for refIndex in xrange(numRefs):
     solve(a==L,uh,bc)
     
     # compute error on refined mesh for accuracy
-    tempMesh = chelp.quadrature_refine(mesh,N,4)    
+    tempMesh = chelp.quadrature_refine(mesh,N,numQRefs)    
     uh = interpolate(uh,FunctionSpace(tempMesh,"CG",p+2))
     e = sqrt(assemble((ue-uh)**2*dx))
 

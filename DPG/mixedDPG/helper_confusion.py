@@ -9,7 +9,7 @@ def quadrature_refine(mesh,N,nqrefs):
         in_cells = MeshFunction("bool", tempMesh, tempMesh.topology().dim())
         in_cells.set_all(False)
         for c in cells(tempMesh):
-            in_cells[c] = (c.midpoint()[0] > 1.0-(1.0/((nqr+1)*N)))
+            in_cells[c] = any([near(vertex.x(0),1) for vertex in vertices(c)]) 
         tempMesh = refine(tempMesh,in_cells)
     return tempMesh
 

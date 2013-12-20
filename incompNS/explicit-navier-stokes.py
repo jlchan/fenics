@@ -70,7 +70,10 @@ p1 = Function(Q)
 k = Constant(dt)
 f = Constant((0, 0))
 
-# Tentative velocity step
+# Explicit convective step
+
+
+# Tentative velocity step - change to 
 F1 = (1/k)*inner(u - u0, v)*dx + inner(grad(u0)*u0, v)*dx + \
      nu*inner(grad(u), grad(v))*dx - inner(f, v)*dx
 a1 = lhs(F1)
