@@ -32,7 +32,10 @@ def parseArg(*arg):
     argvec = [a.split("--")[1]+"=" for a in sys.argv[1:] if '--' in a]
     inputs, remainder = getopt.getopt(sys.argv[1:],'',argvec)
 
-    inputFound = any(arg==argName for arg,val in inputs)
-    if (inputFound==False):
-        return default_val
+    inputFound = False
+    for arg,val in inputs:
+        if arg==argName:
+            inputFound = True
+            return val
+    return default_val
 
