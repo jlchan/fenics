@@ -14,10 +14,15 @@ def quadrature_refine(mesh,N,nqrefs):
     return tempMesh
 
 def erikkson_solution(eps):
-    return Expression('(exp(r1*(x[0]-1))-exp(r2*(x[0]-1)))/(exp(-r1)-exp(-r2))*sin(pi*x[1])',eps = eps,pi = 2*acos(0.0), r1 = (-1+sqrt(1+4*pi*pi*eps*eps))/(-2*eps),r2 = (-1-sqrt(1+4*pi*pi*eps*eps))/(-2*eps))
+    r1=(-1+sqrt(1+4*pi*pi*eps*eps))/(-2*eps)
+    r2=(-1-sqrt(1+4*pi*pi*eps*eps))/(-2*eps)
+    return Expression('(exp(r1*(x[0]-1))-exp(r2*(x[0]-1)))*C*sin(pi*x[1])',eps = eps,pi = 2*acos(0.0), r1=r1, r2=r2, C = 1/(exp(-r1)-exp(-r2)))
+
+def erikkson_solution_gradient(eps):
+    r1=(-1+sqrt(1+4*pi*pi*eps*eps))/(-2*eps)
+    r2=(-1-sqrt(1+4*pi*pi*eps*eps))/(-2*eps)
+    C = 1/(exp(-r1)-exp(-r2))
+    ux = '(r1*exp(r1*(x[0]-1))-r2*exp(r2*(x[0]-1)))*C*sin(pi*x[1])'
+    uy = '(exp(r1*(x[0]-1))-exp(r2*(x[0]-1)))*C*pi*cos(pi*x[1])'
+    return Expression((ux,uy),eps = eps,pi = 2*acos(0.0), r1=r1, r2=r2, C=C)
     
-class Inflow(Expression):
-	def eval(self, values, x):
-		values[0] = 0.0
-		if abs(x[0]) < 1E-14:
-			values[0] = 1.0
