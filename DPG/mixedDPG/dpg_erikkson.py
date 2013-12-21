@@ -31,19 +31,7 @@ grad_ue = chelp.erikkson_solution_gradient(eps)
 
 zero = Expression('0.0')
 
-def u0_boundary(x, on_boundary):
-	return on_boundary
-def outflow(x):
-	return abs(x[0]-1) < 1E-14 #or abs(x[1]-1) < 1E-14 or abs(x[1]) < 1E-14
-def inflow(x):
-	return outflow(x) == False;
-class Inflow(Expression):
-	def eval(self, values, x):
-		values[0] = 0.0
-		if inflow(x):
-			values[0] = 1.0
-
-infl = Inflow()
+infl = chelp.Inflow()
 outfl = 1-infl
 
 hVec = []
@@ -62,28 +50,26 @@ for refIndex in xrange(numRefs):
 	h = CellSize(mesh)
 
 	bcs = []
-	bcs.append(DirichletBC(E.sub(1), zero, outflow)) # error boundary condition
-	#bcs.append(DirichletBC(E.sub(1), zero, inflow)) # error boundary condition
-	bcs.append(DirichletBC(E.sub(0), ue, inflow)) # boundary conditions on u
+	bcs.append(DirichletBC(E.sub(1), zero, chelp.outflow)) # error boundary condition
+	bcs.append(DirichletBC(E.sub(0), ue, chelp.inflow)) # boundary conditions on u
 	if useStrongBC:
-		bcs.append(DirichletBC(E.sub(0), ue, outflow)) # boundary conditions on u
+		bcs.append(DirichletBC(E.sub(0), ue, chelp.outflow)) # boundary conditions on u
 
 	def ip(e,v):
 		return inner(dot(beta,grad(e)),dot(beta,grad(v)))*dx + eps*inner(grad(e),grad(v))*dx #+ eps*inner(infl*e,v)*ds + eps*inner(outfl*dot(grad(e),n),dot(grad(v),n))*ds
 	
 	def b(u,v):
-		w_out = eps*outfl
-		w_in = eps*infl
+		fieldForm = inner(dot(beta,n)*u,v)*ds + inner(-u,dot(beta,grad(v)))*dx + eps*inner(grad(u),grad(v))*dx 
 		if useStrongBC: # strong outflow
-			return inner(-u,dot(beta,grad(v)))*dx + eps*inner(grad(u),grad(v))*dx - inner(w_in*dot(grad(u),n),v)*ds #- inner(w_in*dot(grad(v),n),u)*ds - inner(w_in*u,v)*ds 
+			return fieldForm - inner(eps*dot(grad(u),n),v)*ds 
 		else: # nitsche type of weak BC
-			return inner(-u,dot(beta,grad(v)))*dx + eps*inner(grad(u),grad(v))*dx - inner(eps*dot(grad(u),n),v)*ds - inner(w_out*u,dot(grad(v),n))*ds 
+			return fieldForm - inner(eps*dot(grad(u),n),v)*ds - inner(eps*outfl*u,dot(grad(v),n))*ds 
 
 	a = b(u,v) + b(du,e) + ip(e,v) #+ eps*inner(outfl*u,du)*ds
 
 	f = Expression('0.0')
 	x = V.cell().x
-	L = inner(f,v)*dx - inner(infl*dot(beta,n)*ue,v)*ds
+	L = inner(f,v)*dx 
 	
 	uSol = Function(E)
 	solve(a==L, uSol, bcs)
@@ -112,19 +98,22 @@ for refIndex in xrange(numRefs):
 	fineMesh = chelp.quadrature_refine(mesh,N,numQRefs)
 	fineSpace = FunctionSpace(fineMesh, "Lagrange", pU+2)
 	uF = interpolate(u,fineSpace)
-	err = sqrt(assemble((ue-uF)**2*dx))
+	L2err = (ue-uF)**2*dx
+	l_err = sqrt(assemble(L2err))
 	hh = (1.0/N)*.5**float(refIndex)
 	
 	print "on refinement ", refIndex
 	energy = ip(e,e)
 	totalE = sqrt(assemble(energy))
-	print "h, ", hh , ", L2 error = ", err, ", e = ", totalE	
 
-	n_err = sqrt(assemble(infl*1/h*(ue-uF)**2*ds + eps*(grad_ue-grad(uF))**2*dx))
+	H1err = (grad_ue-grad(uF))**2*dx
+	edge_error = infl*1/h*(ue-uF)**2*ds
+	n_err = sqrt(assemble(eps*edge_error + eps*H1err + L2err))
 	nitscheErrVec.append(n_err)
 
+	print "h, ", hh , ", L2 error = ", l_err, ", e = ", totalE	
 	hVec.append(hh)
-	errVec.append(err)
+	errVec.append(l_err)
 	nDofs.append(U.dofmap().global_dimension())
 	enrgy.append(totalE)
 	if (useAdaptivity):
@@ -149,6 +138,7 @@ for i in range(0, len(errVec)):
 	#print 'ratio(',i+1,') = ', errVec[i]/(enrgy[i])
 
 print "h = ", hVec
+print "energy_err = ", enrgy
 print "L2_err = ", errVec
 print "rates = ", rVec
 print "L2_ratios = ", ratVec

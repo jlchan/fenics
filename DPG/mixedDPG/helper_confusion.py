@@ -26,3 +26,14 @@ def erikkson_solution_gradient(eps):
     uy = '(exp(r1*(x[0]-1))-exp(r2*(x[0]-1)))*C*pi*cos(pi*x[1])'
     return Expression((ux,uy),eps = eps,pi = 2*acos(0.0), r1=r1, r2=r2, C=C)
     
+def u0_boundary(x, on_boundary):
+	return on_boundary
+def outflow(x):
+	return abs(x[0]-1) < 1E-14 #or abs(x[1]-1) < 1E-14 or abs(x[1]) < 1E-14
+def inflow(x):
+	return outflow(x) == False;
+class Inflow(Expression):
+	def eval(self, values, x):
+		values[0] = 0.0
+		if inflow(x):
+			values[0] = 1.0
