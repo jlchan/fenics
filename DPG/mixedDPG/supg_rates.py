@@ -1,7 +1,6 @@
 from dolfin import *
 import helper_functions as help
 import helper_confusion as chelp
-
 import sys,getopt
 
 #print 'Number of arguments:', len(sys.argv), 'arguments.'
@@ -70,6 +69,8 @@ plot(uh)
 plot(tempMesh)
 interactive()
 
+print "h =", h_vec
+print "supg_L2_err =", err_vec
 help.dump_d_vec("h_eps"+str(eps)+"_p"+str(p)+".m",h_vec)
 help.dump_d_vec("err_eps"+str(eps)+"_p"+str(p)+".m",err_vec)
 

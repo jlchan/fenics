@@ -18,14 +18,14 @@ numQRefs = int(help.parseArg('--numQRefs',4))
 useStrongBC = help.parseArg('--useStrongBC','False')=='True' #eval using strings
 plotFlag = help.parseArg('--plot','True')=='True' #eval using strings
 
-dp = int(help.parseArg('--dp',1))
+dp = int(help.parseArg('--dp',2))
 
 pV = pU+dp
 mesh = UnitSquareMesh(N,N)
 
 # define problem params
 print "eps = ", eps
-beta = Expression(('1.0','0.0'))
+beta = chelp.beta()
 ue = chelp.erikkson_solution(eps)
 grad_ue = chelp.erikkson_solution_gradient(eps)
 
@@ -56,7 +56,7 @@ for refIndex in xrange(numRefs):
 		bcs.append(DirichletBC(E.sub(0), ue, chelp.outflow)) # boundary conditions on u
 
 	def ip(e,v):
-		return inner(dot(beta,grad(e)),dot(beta,grad(v)))*dx + eps*inner(grad(e),grad(v))*dx #+ eps*inner(infl*e,v)*ds + eps*inner(outfl*dot(grad(e),n),dot(grad(v),n))*ds
+		return inner(dot(beta,grad(e)),dot(beta,grad(v)))*dx + eps*inner(grad(e),grad(v))*dx + inner(e,v)*dx 
 	
 	def b(u,v):
 		fieldForm = inner(dot(beta,n)*u,v)*ds + inner(-u,dot(beta,grad(v)))*dx + eps*inner(grad(u),grad(v))*dx 
@@ -99,16 +99,16 @@ for refIndex in xrange(numRefs):
 	fineSpace = FunctionSpace(fineMesh, "Lagrange", pU+2)
 	uF = interpolate(u,fineSpace)
 	L2err = (ue-uF)**2*dx
-	l_err = sqrt(assemble(L2err))
+	l_err = sqrt(abs(assemble(L2err)))
 	hh = (1.0/N)*.5**float(refIndex)
 	
 	print "on refinement ", refIndex
 	energy = ip(e,e)
-	totalE = sqrt(assemble(energy))
+	totalE = sqrt(abs(assemble(energy)))
 
 	H1err = (grad_ue-grad(uF))**2*dx
 	edge_error = infl*1/h*(ue-uF)**2*ds
-	n_err = sqrt(assemble(eps*edge_error + eps*H1err + L2err))
+	n_err = sqrt(abs(assemble(eps*edge_error + eps*H1err + L2err)))
 	nitscheErrVec.append(n_err)
 
 	print "h, ", hh , ", L2 error = ", l_err, ", e = ", totalE	
