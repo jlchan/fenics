@@ -3,7 +3,7 @@ import getopt, sys
 # ================= dump to matlab ========================= 
 
 def dumpMat(name, AA):
-    f = open(name, 'w')
+    f = open("read"+name+".m", 'w')
     f.write("%s = sparse(%d,%d);\n" % (name,AA.shape[0],AA.shape[1]))
     for i in range(AA.shape[0]):
         for j in range(AA.shape[1]):
@@ -11,7 +11,7 @@ def dumpMat(name, AA):
                f.write("%s (%d, %d) = %e;\n " % (name,i+1,j+1,AA[i,j]))
 
 def dump_i_vec(name, b):
-	f = open(name, 'w')
+	f = open("read"+name+".m", 'w')
 	for i in range(len(b)):
 		f.write("%s (%d) = %d;\n " % (name,i+1,b[i]))
 
