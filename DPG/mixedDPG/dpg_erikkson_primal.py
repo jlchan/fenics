@@ -5,7 +5,7 @@ from math import ceil
 import helper_functions as help
 import helper_confusion as chelp
 
-useBulkChasing = True
+useBulkChasing = False
 useAdaptivity = False
 
 # Create mesh and definene function space
@@ -41,9 +41,13 @@ nDofs = []
 enrgy = []
 for refIndex in xrange(numRefs):
 	# define spaces
-	U = FunctionSpace(mesh, "Lagrange", pU)
+	U = FunctionSpace(mesh, "CG", pU)
 	V = FunctionSpace(mesh, "DG", pV)
-	F = FunctionSpace(mesh,"RT",pU,restriction="facet") # interfacial flux q                                                 
+	if (pU>1):	
+		F = FunctionSpace(mesh,"BDM",pU-1,restriction="facet") # interfacial flux		
+	else:
+		F = FunctionSpace(mesh,"RT",pU,restriction="facet") # interfacial flux
+
 	E = MixedFunctionSpace( [U,V,F] )
 	(u,e,f) = TrialFunctions(E)
 	(du,v,df) = TestFunctions(E)
@@ -51,6 +55,7 @@ for refIndex in xrange(numRefs):
 	h = CellSize(mesh)
 
 	bcs = []
+	bcs.append(DirichletBC(E.sub(2), Constant((0.0,0.0)), DomainBoundary())) # flux BCs - remove their contribution completely!
 	bcs.append(DirichletBC(E.sub(1), zero, chelp.outflow,"pointwise")) # error boundary condition
 	bcs.append(DirichletBC(E.sub(0), ue, chelp.inflow)) # boundary conditions on u
 	if useStrongBC:
@@ -60,17 +65,28 @@ for refIndex in xrange(numRefs):
 		return inner(dot(beta,grad(e)),dot(beta,grad(v)))*dx + eps*inner(grad(e),grad(v))*dx + inner(e,v)*dx	
 	def b(u,v,f):
 		fieldForm = inner(dot(beta,n)*u,v)*ds + inner(-u,dot(beta,grad(v)))*dx + eps*inner(grad(u),grad(v))*dx 
-		fluxForm = -inner(dot(f('+'),n('+')),v('+')-v('-')) * dS - inner(dot(f,n),v) * ds
+		fieldForm += -inner(dot(f('+'),n('+')),v('+')-v('-')) * dS 
 		if useStrongBC: # strong outflow
-			return fieldForm + fluxForm - inner(eps*dot(grad(u),n),v)*ds 
+			return fieldForm - inner(eps*dot(grad(u),n),v)*ds 
 		else: # nitsche type of weak BC
-			return fieldForm + fluxForm - inner(eps*dot(grad(u),n),v)*ds - inner(eps*outfl*u,dot(grad(v),n))*ds
+			return fieldForm - inner(eps*dot(grad(u),n),v)*ds - inner(eps*outfl*u,dot(grad(v),n))*ds
 
-	a = b(u,v,f) + b(du,e,df) + ip(e,v) #+ inner(dot(f,n),dot(df,n))*ds
+	a = b(u,v,f) + b(du,e,df) + ip(e,v) 
 
-	F = Expression('0.0')
+	Udofs = E.sub(0).dofmap().collapse(mesh)[1].values()
+	Vdofs = E.sub(1).dofmap().collapse(mesh)[1].values()
+	Fdofs = E.sub(2).dofmap().collapse(mesh)[1].values()
+	print "Dofs sizes = ", len(Udofs), ", flux dofs = ", len(Fdofs)
+
+	if False:
+		help.dumpMat("A",assemble(a).array())
+		help.dump_i_vec("U",Udofs)
+		help.dump_i_vec("E",Vdofs)
+		help.dump_i_vec("F",Fdofs)
+
+	forcing = Expression('0.0')
 	x = V.cell().x
-	L = inner(F,v)*dx 
+	L = inner(forcing,v)*dx 
 	
 	uSol = Function(E)
 	solve(a==L, uSol, bcs)
@@ -146,13 +162,18 @@ print "L2_ratios = ", ratVec
 print "nitsche_ratios = ", nratVec
 
 if plotFlag:
+	#print "solving a final time"
+	#uSol = Function(E)
+	#solve(a==L, uSol, bcs)
+	#(uh,eh,fh) = uSol.split()
+
 	# Plot solution
 	fineMesh = mesh
 	for ref in xrange(pU-1):
 		fineMesh = refine(fineMesh)
 		fineSpace = FunctionSpace(fineMesh, "Lagrange", 1)
 	uF = interpolate(uh, fineSpace)
-	eF = interpolate(eh, fineSpace)
+	eF = eh
 	err = ue-uF
 	plot(uF)
 	plot(eF)

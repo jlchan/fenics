@@ -32,9 +32,9 @@ def beta():
 def u0_boundary(x, on_boundary):
 	return on_boundary
 def outflow(x):
-	return abs(x[0]-1) < 1E-14 #or abs(x[1]-1) < 1E-14 or abs(x[1]) < 1E-14
+	return abs(x[0]-1) < 1E-14 or abs(x[1]-1) < 1E-14 or abs(x[1]) < 1E-14
 def inflow(x):
-	return outflow(x) == False;
+	return abs(x[0]) < 1E-14 #or abs(x[1]-1) < 1E-14 or abs(x[1]) < 1E-14
 class Inflow(Expression):
 	def eval(self, values, x):
 		values[0] = 0.0

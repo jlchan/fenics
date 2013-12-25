@@ -26,6 +26,8 @@ mesh = UnitSquareMesh(N,N)
 # define problem params
 print "eps = ", eps
 beta = chelp.beta()
+beta = Expression(('1.0','0.0'))
+print "beta = ", beta
 ue = chelp.erikkson_solution(eps)
 grad_ue = chelp.erikkson_solution_gradient(eps)
 
@@ -51,7 +53,7 @@ for refIndex in xrange(numRefs):
 
 	bcs = []
 	bcs.append(DirichletBC(E.sub(1), zero, chelp.outflow)) # error boundary condition
-	bcs.append(DirichletBC(E.sub(0), ue, chelp.inflow)) # boundary conditions on u
+	bcs.append(DirichletBC(E.sub(0), ue, chelp.inflow)) # boundary conditions on u	
 	if useStrongBC:
 		bcs.append(DirichletBC(E.sub(0), ue, chelp.outflow)) # boundary conditions on u
 
@@ -65,10 +67,11 @@ for refIndex in xrange(numRefs):
 		else: # nitsche type of weak BC
 			return fieldForm - inner(eps*dot(grad(u),n),v)*ds - inner(eps*outfl*u,dot(grad(v),n))*ds 
 
-	a = b(u,v) + b(du,e) + ip(e,v) #+ eps*inner(outfl*u,du)*ds
+	a = b(u,v) + b(du,e) + ip(e,v) 
 
-	f = Expression('0.0')
 	x = V.cell().x
+	#f = Expression("1.0")
+	f = zero
 	L = inner(f,v)*dx 
 	
 	uSol = Function(E)
