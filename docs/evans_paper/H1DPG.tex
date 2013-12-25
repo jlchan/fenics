@@ -6,9 +6,6 @@
 \usepackage{amsmath,amssymb,amsfonts,mathrsfs}
 \let\proof\relax 
 \let\endproof\relax
-\usepackage{amsthm}
-\usepackage{amssymb}
-\usepackage{amscd}
 \usepackage{listings}
 \usepackage{array}
 \usepackage{mathtools}
@@ -22,6 +19,11 @@
 \usepackage{tikz}
 \usepackage{subfigure}
 \usepackage[normalem]{ulem}
+
+%\usepackage{lineno}
+%\pagewiselinenumbers
+%\usepackage{uselinenofix}
+
 
 \newcommand{\bs}[1]{\boldsymbol{#1}}
 
@@ -128,7 +130,7 @@
 \newtheorem{remark}{Remark}
 
 \title{A minimum-residual finite element method for the convection-diffusion equation}
-\author{Jesse Chan, John A. Evans}
+\author{Jesse Chan, John A. Evans, Weifeng Qiu}
 \date{}
 \begin{document}
 
@@ -169,7 +171,7 @@ where $b\LRp{\cdot,\cdot}: U \times V \to \mbb{R}$ is a continuous bilinear form
 \[
 \langle Bu,v\rangle_{V^* \times V} \coloneqq b(u,v), \quad u\in U, v\in V
 \]
-with $\LRa{\cdot, \cdot}_{V^*\times V}$ denoting the duality pairing between $V^*$ and $V$, to obtain the operator form of the our variational problem
+with $\LRa{\cdot, \cdot}_{V^*\times V}$ denoting the duality pairing between $V^*$ and $V$, to obtain the operator form of the variational problem
 \begin{equation}
 \eqnlab{dualEq}
 Bu = l \quad \text{in } V^*.
@@ -193,7 +195,7 @@ which is nothing more than the least-squares condition enforcing orthogonality o
 
 The difficulty in working with the first-order optimality condition~\eqref{orthog} is that the inner product $\LRp{\cdot,\cdot}_{V^*}$ cannot be evaluated explicitly.  However, we have that 
 \begin{align}
-\left(l-Bu_h,B\delta u\right)_{V^*} = \left(R_V^{-1}(l-Bu_h),R_V^{-1}B\delta u\right)_{V},
+\left(l-Bu_h,B\delta u\right)_{V^*} = \left(R_V^{-1}(l-Bu_h),R_V^{-1}B\delta u\right)_{V} = 0,
 \label{rieszOrthog}
 \end{align}
 where $R_V: V\rightarrow V^*$ is the Riesz map mapping elements of a Hilbert space $V$ to elements of the dual $V^*$ defined by
@@ -219,25 +221,25 @@ Secondly, we need to enforce the orthogonality of the error in equation~\eqref{r
 \LRp{e,R_V^{-1}B\delta u}_V &= 0, \quad \forall \delta u \in U_h\\
 \Rightarrow \LRa{e,B\delta u}_{V\times V^*} &= b(\delta u, e) = 0.
 \end{align*}
-Putting these two conditions returns the symmetric saddle-point problem for $\LRp{e,u_h} \in V\times U_h$
+Combining these two conditions together returns the symmetric saddle-point problem for $\LRp{e,u_h} \in V\times U_h$
 \begin{align*}
 \LRp{e,v}_V + b(u_h,v) &= l(v), \quad \forall v\in V\\
 b(\delta u, e) &= 0, \quad \forall \delta u \in U_h.
 \end{align*}
 We note that, under the perspective of the minimization of $J(u_h)$, this system can be viewed as a constrained optimization problem for $e$, where $u_h$ are Lagrange multipliers enforcing satisfaction of the variational problem.  
 
-At the moment, $V$ remains an infinite-dimensional space, and will have to be discretized by some $V_h\subset V$ in order to yield a solution.  Under this infinite dimensional setting, the choice of discretization for $V$ will determine how effectively the solution of the discrete problem will minimize $J(u_h)$ -- inadequate resolution of $V_h$ may result in a solution which is far from the true minimizer.  
+At the moment, $V$ remains an infinite-dimensional space, and in practice, will have to be replaced by some $V_h\subset V$.  Under this finite dimensional setting, the choice of discretization $V_h$ will determine how effectively the solution of the discrete problem will minimize $J(u_h)$ -- inadequately enriched choices of $V_h$ may result in solutions that are far from the true minimizer.  
 
-\begin{figure}[!h]
-\centering
-\includegraphics[scale=.3]{figs/saddlePoint.pdf}
-\caption{Saddle point system for minimization of $J(u_h)$; the Schur complement eliminating degrees of freedom for $e$ returns the system resulting from optimal test functions.}
-\end{figure}
+%\begin{figure}[!h]
+%\centering
+%\includegraphics[scale=.3]{figs/saddlePoint.pdf}
+%\caption{Saddle point system for minimization of $J(u_h)$; the Schur complement eliminating degrees of freedom for $e$ returns the system resulting from optimal test functions.}
+%\end{figure}
 
 This formulation was first introduced by Dahmen et al.\ in \cite{DahmenVariationalStabilization}, where $V_h$ was determined adaptively.  The method proceeded in two steps -- first, $V_h$ was set equal to $U_h$ on what we will define as the \textit{coarse mesh}.  Next, \textit{a posteriori} error estimators for $e$ (based on a specific choice of inner product $\LRp{\cdot,\cdot}_V$) were used to drive adaptivity to determine a fine-scale mesh on which $V_h$ was supported.  We choose a simpler representation -- if $U_h$ is represented by piecewise polynomials of order $p$, we set $V_h$ to be piecewise polynomials of order $p+\triangle p$.  We note that these two choices of discretization for $V$ are not mutually exclusive, and that novel choices for $V_h$ are likely the key to yielding computationally effective methods under this framework.  
 \subsection{DPG optimal test function framework}
 
-The DPG method was introduced by Demkowicz and Gopalakrishnan in 2009, and rapidly applied to a series of problems in computational mechanics \cite{DPG2,DPG3,DPG4,maxwellDPG,stokesDPG}.  Though the DPG method shares the same variational setting as Dahmen et al.\, each method followed very different approaches in implementation.  Recall the orthogonality of error~\eqref{rieszOrthog}; by defining the error representation function $e$ and undoing the Riesz map acting on $B\delta u$, we recovered a saddle point formulation.  However, it is possible to instead undo the Riesz map acting on the residual instead, to recover
+The DPG method was introduced by Demkowicz and Gopalakrishnan in 2009, and rapidly applied to a series of problems in computational mechanics \cite{DPG2,DPG3,DPG4,maxwellDPG,stokesDPG}.  Though the DPG method shares the same variational setting as Dahmen et al.\, each method followed very different approaches in implementation.  Recall the orthogonality of error~\eqref{rieszOrthog}; by defining the error representation function $e$ and undoing the Riesz map acting on $B\delta u$, we recovered a saddle point formulation.  However, it is possible instead to undo the Riesz map acting on the residual, to recover
 \begin{align*}
 \LRp{R_V^{-1}\LRp{l-Bu_h},R_V^{-1}B\delta u}_V &= 0, \quad \forall \delta u \in U_h\\
 \Rightarrow \LRa{\LRp{l-Bu_h},R_V^{-1}B\delta u}_{V^*\times V} &= 0\\
@@ -249,13 +251,13 @@ b(u_h,v_{\delta u}) = l(v_{\delta u}), \quad \forall \delta u \in U_h.
 \]
 The DPG method with optimal test functions was constructed under this perspective of minimization of $J(u_h)$.  While $v_{\delta u} \in V$ must still be solved for approximately, under the assumption of discontinuous test functions, this solve can be localized to a single element.\footnote{In practice, if $U_h(K) = P^p(K)$ is the space of polynomials of order $p$ over the element $K$, then the enriched space $V_h \subset V$ is chosen to be $V_h(K) = P^{p+\triangle p}(K)$, where $\triangle p \geq n$, and $d$ is the spatial dimension.}
 
-We can draw yet another connection to the DPG method by considering the discrete problem which arises from the saddle point formulation.  Our discrete saddle point system is
+We can draw yet another connection to the DPG method by considering the discrete problem which arises from the saddle point formulation.  Defining the vectors of coefficients $\bs{u} = \LRc{u_j}_{j=1}^{\dim{U_h}}$ and $\bs{e} = \LRc{e_j}_{j=1}^{\dim{V_h}}$, our discrete saddle point system is
 \[
 \left[\begin{array}{cc} \bs{A} &\bs{B}\\ \bs{B}^T&{0}\end{array}\right]\left[\begin{array}{c}\bs{e}\\ \bs{u}\end{array}\right] = \left[\begin{array}{c}\bs{f}\\ 0\end{array}\right],
 \]
-where, for $u_j\in U_h$ and $v_i,v_j\in V_h$, 
+where, for basis functions $\psi_j\in U_h$ and $\phi_i,\phi_j\in V_h$, 
 \[
-\bs{A}_{ij} \coloneqq \LRp{v_i,v_j}_V, \quad \bs{B}_{ij} \coloneqq b\LRp{u_j,v_i},
+\bs{A}_{ij} \coloneqq \LRp{\phi_i,\phi_j}_V, \quad \bs{B}_{ij} \coloneqq b\LRp{\psi_j,\phi_i},
 \]
 such that $\bs{A}$ is a square matrix and $\bs{B}$ is an overdetermined rectangular matrix.  Expressing $\bs{e} = \bs{A}^{-1}\LRp{\bs{f}-\bs{B}\bs{u}}$ allows us to statically condense out the degrees of freedom $\bs{e}$ to form the Schur complement
 \[
@@ -297,7 +299,7 @@ where $\LRp{u',\bar{w}}_E$ is defined through
 \LRp{u',\bar{w}}_E = \LRp{Tu',T\bar{w}}_V\\
 T:U\rightarrow V, \quad T \coloneqq R_V^{-1} B
 \end{align*}
-where $\LRp{v,\delta v}_V$ is an inner product on $V$ and $R_V$ is the Riesz map associated with this inner product.  DPG literature refer to $T$ as the \textit{trial-to-test} operator, which, given a basis function $\phi_i \in U_h$, returns the optimal test function for $\phi_i$ \cite{DPG2}.  
+where $\LRp{v,\delta v}_V$ is an inner product on $V$ and $R_V$ is the Riesz map associated with this inner product.  DPG literature refers to $T$ as the \textit{trial-to-test} operator, which, given a basis function $\phi_i \in U_h$, returns the optimal test function for $\phi_i$ \cite{DPG2}.  
 
 If we define our fine-scale using the above orthogonality condition, we have that
 \begin{align*}
@@ -310,11 +312,11 @@ u_h \in U_h, u' \in U, v \in V\\
 \LRa{Bu_h,v}_{V^*\times V} + \LRp{Tu',v}_{V} &= \LRa{l,v}_{V^*\times V}\\
 \LRp{Tu',B\bar{w}}_{V\times V^*} &= 0, \quad \forall \bar{w} \in U_h.
 \end{align*}
-The saddle point formulation of Section~\ref{sec:saddlePoint} can be interpreted as solving not for $u'$, but for $e\coloneqq Tu'$.  The discrete approximation then follows directly from setting $V \coloneqq V_h$, some finite-dimensional enriched space, which impacts the method only through the approximation of $Tu'$ and the construction of the Riesz map $R_V^{-1}$.  
+The saddle point formulation of Section~\ref{sec:saddlePoint} can be interpreted as solving not for $u'$, but for $e\coloneqq Tu'$.  The discrete approximation then follows directly from setting $V \coloneqq V_h$, some finite-dimensional enriched space, which impacts the method through the approximation of $Tu'$ via approximation of the Riesz map $R_V^{-1}$.  
 
 To summarize, the minimum-residual framework motivating both Dahmen's variational stabilization and Demkowicz and Gopalakrishnan's DPG method can be characterized as a VMS method under which 
 \begin{itemize}
-\item Orthogonality of $U_h$ and $U'$ is defined through a nonstandard \textit{energy inner product} (i.\ e.\ $\LRp{u',u_h}_E = 0$), and
+\item Orthogonality of $U_h$ and $U'$ is defined through a nonstandard \textit{energy inner product} $$\LRp{u',\delta u}_E = 0, \quad\forall \delta u \in U_h,$$ 
 \item A change of variables (i.\ e.\ solving for $Tu'$ instead of $u'$) symmetrizes the fine-scale contribution and overall system.
 \end{itemize}
 
@@ -326,21 +328,21 @@ From this point on, we will focus specifically on $H^1$ standard Galerkin formul
 \[
 \div(\beta u) - \epsilon \del u = f,
 \]
-which represents the convection of some quantity $u$ subject to a convection field $\beta \in R^n$ and diffusion of magnitude $\epsilon \in \mathbb{R}$, where $\epsilon > 0$.  We impose inflow and outflow boundary conditions
+which represents the convection of some quantity $u$ subject to a convection field $\beta \in R^n$ and diffusion of magnitude $\epsilon \in \mbb{R}$, where $\epsilon > 0$.  We impose inflow and outflow boundary conditions
 \begin{align*}
 \left.u\right|_{\Gamma_{\rm in}} &= u_{\rm in}\\
 \left.u\right|_{\Gamma_{\rm out}} &= u_{\rm out}
 \end{align*}
 where the following boundaries are defined as 
 \begin{align*}
-\Gamma_{\rm in}\coloneqq \LRc{x\in \partial \Omega s.\ t.\ \beta\cdot\vec{n}(x) < 0}\\
-\Gamma_{\rm out}\coloneqq \LRc{x\in \partial \Omega s.\ t.\ \beta\cdot\vec{n}(x) > 0}
+\Gamma_{\rm in}\coloneqq \LRc{x\in \partial \Omega:  \beta\cdot\vec{n}(x) < 0}\\
+\Gamma_{\rm out}\coloneqq \LRc{x\in \partial \Omega: \beta\cdot\vec{n}(x) > 0}
 \end{align*}
-where $\vec{n}(x)$ is the outward normal at a point on the boundary $\partial \Omega$.  If it is non-empty, we may also define $\Gamma_{0}\coloneqq \LRc{x\in \partial \Omega s.\ t.\ \beta\cdot\vec{n}(x) = 0}$ as the boundary with outward normal orthogonal to the streamline.  
+where $\vec{n}(x)$ is the outward normal at a point on the boundary $\partial \Omega$.  If it is non-empty, we may also define $\Gamma_{0}\coloneqq \LRc{x\in \partial \Omega s.\ t.\ \beta\cdot\vec{n}(x) = 0}$ as the boundary with outward normal orthogonal to the streamline.  For the remainder of this paper, we treat non-homogeneous boundary conditions as lifted forcing data, and consider only the homogeneous case.  
 
-Under $u,v \in H^1_0(\Omega)$, Our weak formulation becomes
+For $u\in H^1_0(\Omega)$, our weak formulation becomes
 \[
-\LRp{\Grad u,\beta v + \epsilon \Grad v}_{\L} = \LRp{f,v}_{\L}.
+\LRp{\Grad u,\beta v + \epsilon \Grad v}_{\L} = \LRp{f,v}_{\L}, \quad \forall v \in H^1_0
 \]
 A norm based on the symmetric part of the bilinear form was explored in \cite{DahmenVariationalStabilization}, but yielded approximations which degnerated in $\epsilon$.  We present here two different methods based on alternative choices for test norms on $V$ for the convection-diffusion equation that both yield good results as $\epsilon\rightarrow 0$.  
 
@@ -425,7 +427,7 @@ Thus, the full formal characterization of the second method can be given as foll
 \end{align*}
 where
 \begin{align*}
-\LRp{e,v}_V \coloneqq \LRp{\beta\cdot \Grad e,\beta\cdot \Grad v}_{\L} + \epsilon \LRp{e,\Grad v}_{\L}.
+\LRp{e,v}_V \coloneqq \LRp{\beta\cdot \Grad e,\beta\cdot \Grad v}_{\L} + \epsilon \LRp{\Grad e,\Grad v}_{\L}.
 \end{align*}
 We will utilize this second version of the method for all following numerical examples.  
 
@@ -444,7 +446,7 @@ We report only $L^2$ errors for each example, due to the fact that $H^1$ error i
 
 \subsection{Erikkson-Johnson model problem}
 
-We adopt a problem first proposed by Eriksson and Johnson in \cite{Eriksson1993} and later used in \cite{DPGrobustness, DPGrobustness2} to determine the robustness of DPG with respect to the diffusion parameter $\epsilon$. For the choice of $\Omega = (0,1)^2$, $f=0$, and $\beta = (1,0)^T$, the convection diffusion equation reduces to
+We adopt a problem first proposed by Eriksson and Johnson in \cite{Eriksson1993} and later used in \cite{DPGrobustness, DPGrobustness2} to determine the robustness of the Discontinuous Petrov-Galerkin method with respect to the diffusion parameter $\epsilon$. For the choice of $\Omega = (0,1)^2$, $f=0$, and $\beta = (1,0)^T$, the convection diffusion equation reduces to
 \[
 \pd{u}{x} - \epsilon \left(\pdd{u}{x}+ \pdd{u}{y}\right) = 0,
 \]
@@ -599,29 +601,29 @@ We avoid both the above ``fixes'' in order to more cleanly demonstrate the behav
 \end{figure}
 
 
-\subsection{A 3D model problem}
-
-We conclude by applying the method to a simple model problem in 3 space dimensions.  We solve on the unit cube $\Omega = [0,1]^3$ with $\beta = [1,1,1]$, $f=1$ and $u=0$ on $\partial \Omega$.  A boundary layer develops on the outflow boundaries $x,y,z = 1$.  Figure~\ref{fig:3D5e2} displays slices of the domain along the streamline direction to illustrate the formation of such a boundary layer.  
-
-\begin{figure}[!h]
-\centering
-\subfigure{\includegraphics[scale=.44]{figs/3DSlices5e2.png}}
-\caption{3D Model problem with $\epsilon = 5e-2$.}
-\label{fig:3D5e2}
-\end{figure}
-
-We examined the behavior of the method with respect to a small $\epsilon$, in this case $\epsilon = 10^{-6}$.  8 adaptive refinements were done beginning with a uniform linear mesh of 8 elements per side; Figure~\ref{fig:3D1e6} shows the resulting solution and mesh along a cut orthogonal to the streamline direction.  All experiments indicate that the method appears to behave qualitatively the same as in 2 dimensions, modulo increased computational cost.
-
-\begin{figure}[!h]
-\centering
-%\subfigure{\includegraphics[scale=.25]{figs/3DMesh.png}}
-\subfigure{\includegraphics[scale=.4]{figs/3DSlice.png}}
-\subfigure{\includegraphics[scale=.4]{figs/3DMeshSlice.png}}
-\caption{3D Model problem with $\epsilon = 10^{-6}$ after 8 refinements.  The cube is sliced along a plane with normal direction orthogonal to the streamline in order to illustrate the clustering of refinements in the interior of the domain.}
-\label{fig:3D1e6}
-\end{figure}
-
-%\textcolor{red}{Does Hughes have a reference for the weakening of divergence in higher dimensions?}.  
+%\subsection{A 3D model problem}
+%
+%We conclude by applying the method to a simple model problem in 3 space dimensions.  We solve on the unit cube $\Omega = [0,1]^3$ with $\beta = [1,1,1]$, $f=1$ and $u=0$ on $\partial \Omega$.  A boundary layer develops on the outflow boundaries $x,y,z = 1$.  Figure~\ref{fig:3D5e2} displays slices of the domain along the streamline direction to illustrate the formation of such a boundary layer.  
+%
+%\begin{figure}[!h]
+%\centering
+%\subfigure{\includegraphics[scale=.44]{figs/3DSlices5e2.png}}
+%\caption{3D Model problem with $\epsilon = 5e-2$.}
+%\label{fig:3D5e2}
+%\end{figure}
+%
+%We examined the behavior of the method with respect to a small $\epsilon$, in this case $\epsilon = 10^{-6}$.  8 adaptive refinements were done beginning with a uniform linear mesh of 8 elements per side; Figure~\ref{fig:3D1e6} shows the resulting solution and mesh along a cut orthogonal to the streamline direction.  All experiments indicate that the method appears to behave qualitatively the same as in 2 dimensions, modulo increased computational cost.
+%
+%\begin{figure}[!h]
+%\centering
+%%\subfigure{\includegraphics[scale=.25]{figs/3DMesh.png}}
+%\subfigure{\includegraphics[scale=.4]{figs/3DSlice.png}}
+%\subfigure{\includegraphics[scale=.4]{figs/3DMeshSlice.png}}
+%\caption{3D Model problem with $\epsilon = 10^{-6}$ after 8 refinements.  The cube is sliced along a plane with normal direction orthogonal to the streamline in order to illustrate the clustering of refinements in the interior of the domain.}
+%\label{fig:3D1e6}
+%\end{figure}
+%
+%%\textcolor{red}{Does Hughes have a reference for the weakening of divergence in higher dimensions?}.  
 
 \section{Conclusions and future direction}
 
@@ -643,13 +645,13 @@ The main obstacle to making this method computationally competitive is the doubl
 
 The cost of explicitly discretizing the fine scale error representation $e\in V_h$ roughly amounts to the cost of discretizing an additional coupled PDE under a higher resolution.   The idea of solving an additional PDE for the purposes of stabilization is not unheard of \cite{Barter}; however, the additional discretization cost must be minimized.  We propose several preliminary ideas for doing so: 
 \begin{itemize}
-\item Recall in Section~\ref{sec:saddlePoint} that the saddle point system is reducible to 
-\[
-\bs{B}^T \bs{A}^{-1}\bs{B} \bs{u} = \bs{B}^T \bs{A}^{-1}\bs{f}.
-\]
-where $f$ and $B$ are the load and overdetermined stiffness matrix under $V_h$, and $A$ is the Gram matrix/discrete Riesz map associated with the inner product $\LRp{v,\delta v}_V$.  One approach is to explore possibilities for rapid inversion of $A$.  For example, it is possible to choose $V_h$ to simply be the space of piecewise linears enriched with bubbles -- higher order degrees of freedom could be condensed out, resulting in a system for $e$ with the same number of unknowns as $u$.  The resulting matrix-vector products required to form the Schur complement could be parallelized as well.  
+%\item Recall in Section~\ref{sec:saddlePoint} that the saddle point system is reducible to 
+%\[
+%\bs{B}^T \bs{A}^{-1}\bs{B} \bs{u} = \bs{B}^T \bs{A}^{-1}\bs{f}.
+%\]
+%where $f$ and $B$ are the load and overdetermined stiffness matrix under $V_h$, and $A$ is the Gram matrix/discrete Riesz map associated with the inner product $\LRp{v,\delta v}_V$.  One approach is to explore possibilities for rapid inversion of $A$.  For example, it is possible to choose $V_h$ to simply be the space of piecewise linears enriched with bubbles -- higher order degrees of freedom could be condensed out, resulting in a system for $e$ with the same number of unknowns as $u$.  The resulting matrix-vector products required to form the Schur complement could be parallelized as well.  
 
-One additional possibility would be the exploration of iterative methods for the Schur complement -- the matrix is positive definite, and assembling a matrix-vector product could be done efficiently under a good preconditioner for the symmetric positive-definite matrix $\bs{A}^{-1}$.  Preliminary results demonstrate effective speedup for uniform meshes of piecewise linears in 2D using standard preconditioners (ILU, block Jacobi, AMG), and suggest that a discretization of $V_h$ using a $h$-refined fine mesh could be possible; however, more work would be required to develop preconditioners for high order adaptive meshes.  
+%One additional possibility would be the exploration of iterative methods for the Schur complement -- the matrix is positive definite, and assembling a matrix-vector product could be done efficiently under a good preconditioner for the symmetric positive-definite matrix $\bs{A}^{-1}$.  Preliminary results demonstrate effective speedup for uniform meshes of piecewise linears in 2D using standard preconditioners (ILU, block Jacobi, AMG), and suggest that a discretization of $V_h$ using a $h$-refined fine mesh could be possible; however, more work would be required to develop preconditioners for high order adaptive meshes.  
 \item Another possibility would be to solve the saddle point problem using an Uzawa method \cite{uzawa}, which would decouple the saddle point system into two problems, each involving only degrees of freedom for $e$ or for $u$.  The solution of these two problems feeds an iterative procedure which can converge to the solution of the saddle point problem.  Again, effective use of an Uzawa algorithm would require a good preconditioner for $\bs{A}$ under high-order refined meshes.
 \item We hope to explore alternative discretizations for both $U_h$ and $V_h$ in order to minimize degrees of freedom or solution for in the overall system.  A few examples of nonstandard discretizations include higher order continuity basis functions (splines and NURBS \cite{NURBSorig}), and discontinuous functions (DG).  Preliminary experiments have yielded promising results in 1D under the combination of higher-continuity and $C_0$ bases for $U_h$ and $V_h$, respectively.  We hope to further explore intelligent mixing of discretizations for trial and test spaces in future experiments.  
 \item The DPG method achieves computational efficiency by block-diagonalizing $\bs{A}$ using discontinuous test functions.  The same method could be applied to the $H^1$ setting for convection-diffusion problems at the cost of introducing inter-element fluxes representing the trace on the boundary of an element resulting from integration by parts of the viscous term.  An alternative along the same lines would be to consider block diagonalization of $\bs{A}$ under a patch-based decomposition, such as FETI or one of its variants \cite{FETI1,FETI2}.  
