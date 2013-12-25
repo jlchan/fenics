@@ -1,0 +1,126 @@
+function plot_rates
+
+h =  [0.25, 0.125, 0.0625, 0.03125];
+
+L2_err = {};
+L2_err{1} =  [0.022271150855443837, 0.0060722331180760756, 0.0015682421104001856, 0.00039592411289509662];
+L2_err{2} = [0.0016966179350137061, 0.00021196911168591827, 2.641497770883727e-05, 3.2976278057945512e-06];
+L2_err{3} = [9.6737789634304279e-05, 6.1114762326623086e-06, 3.8255058061166508e-07, 2.382929604001783e-08];
+
+A = {};
+for p = 1:length(L2_err)
+    A{p} = [p*ones(size(L2_err{p}')) h' L2_err{p}'];
+end
+plotConvergence(A,'primal_eps1e0')
+
+figure
+L2_err = {};
+L2_err{1} =  
+L2_err{2} = 
+L2_err{3} = 
+
+A = {};
+for p = 1:length(L2_err)
+    A{p} = [p*ones(size(L2_err{p}')) h' L2_err{p}'];
+end
+plotConvergence(A,'primal_eps1e4')
+
+figure
+L2_err = {};
+L2_err{1} = [0.0195164085045826, 0.0049358418234634631, 0.001237672042832766, 0.00030965271524897338];
+L2_err{2} =  [0.00184534815569287, 0.00021866939812788675, 2.6664139825494083e-05, 3.3060652687821674e-06];
+L2_err{3} = [0.00012401467416241977, 7.633690111951083e-06, 4.5597355646642511e-07, 2.7132954081077941e-08];
+
+A = {};
+for p = 1:length(L2_err)
+    A{p} = [p*ones(size(L2_err{p}')) h' L2_err{p}'];
+end
+plotConvergence(A,'mixed_eps1e0')
+
+figure
+L2_err = {};
+L2_err{1} = [0.20199648575495421, 0.13673874643632267, 0.095715909916275432, 0.067524429534865135];
+L2_err{2} = [0.11190904378294449, 0.078801861759307992, 0.055667065979077494, 0.039353186765938554];
+L2_err{3} = [0.075761491097752071, 0.053377573007982473, 0.037697545464590948, 0.026648087256833028];
+
+A = {};
+for p = 1:length(L2_err)
+    A{p} = [p*ones(size(L2_err{p}')) h' L2_err{p}'];
+end
+plotConvergence(A,'mixed_eps1e4')
+
+
+
+function plotConvergence(A,name)
+% % First order solution
+% A{1} = [1 0.015625000000000 0.009092198566947
+% 1 0.007812500000000   0.001941095878590
+% 1 0.003906250000000   0.000472314346570
+% 1 0.001953125000000   0.000115962509411];
+% % Second order solution
+% A{2} = [2 0.015625000000000 0.001529334669987
+% 2 0.007812500000000   0.000358791388418
+% 2 0.003906250000000   0.000042735296594
+% 2 0.001953125000000   0.000005086547954];
+% % Third order solution
+% A{3} = [3 0.015625000000000 6.590037046239085e-04
+% 3 0.007812500000000   0.000049080023736
+% 3 0.003906250000000   0.000002413575104
+% 3 0.001953125000000   0.000000150814174];
+% % Fourth order solution
+% A{4} = [4 0.015625000000000 1.326513627798934e-04
+% 4 0.007812500000000   0.000002402383781
+% 4 0.003906250000000   0.000000169556135
+% 4 0.001953125000000   0.000000005378503];
+% % Fifth order solution
+% A{5} = [5 0.015625000000000 1.465040597678935e-05
+% 5 0.007812500000000   0.000000956316574
+% 5 0.003906250000000   0.000000013931646
+% 5 0.001953125000000   0.000000000196333];
+%%%%%%%%%%%%%%%------------h convergence----------------------------
+N = length(A);
+order = zeros(N,1);
+%figure
+axes('fontsize',14);
+hold on;
+kValues = zeros(N,1); % will hold 1,2,3,...
+min_x = 1;
+max_x = 1;
+for n=1:N
+    kValues(n) = n;
+    h = A{n}(:,2); err = sqrt(sum(A{n}(:,3:end).^2,2));
+    % slope
+    order(n) = (log(err(end))-log(err(end-1)))/(log(h(end))-log(h(end-1)));
+    loglog(h,err,'linewidth',2.0)
+    
+    % Draw the solution order
+    text(h(1)+5.e-2,err(1),strcat('k = ',num2str(A{n}(1,1))),'FontSize',14)
+    
+    % drawing the slope, working between log and linear scale
+    x1 = h(end); x2 = h(end-1)-0.5*(h(end-1)-h(end));
+    y1 = err(end) + err(end)*0.2;
+    b = log(y1) - order(n)*log(x1);
+    y2 = exp(order(n)*log(x2) + b);
+    x3 = x1;
+    y3 = y2;
+    px = [x1,x2,x3,x1];
+    py = [y1,y2,y3,y1];
+    loglog(px,py,'r','linewidth',1.0)
+    
+    % plot the order of convergence
+    xm = x1; xm = xm - 0.2*xm;
+    min_x = min(min_x,xm);
+    ym = y1 + 0.3*(y3-y1);
+    text(xm,ym,num2str(order(n),3),'FontSize',14)
+    
+    xm = x1 + 0.3*(x2-x1);
+    ym = y2 + 0.5*y2;
+    text(xm,ym,'1','FontSize',14)
+end
+min_x = min_x - 0.2 * min_x;
+xlim([min_x max_x]);
+set(gca,'XScale','log')
+set(gca,'YScale','log')
+xlabel('h'); ylabel('error in L^2-norm');
+print(gcf,'-depsc',strcat(name, '_h'))
+print(gcf,'-dpng',strcat(name, '_h'))
