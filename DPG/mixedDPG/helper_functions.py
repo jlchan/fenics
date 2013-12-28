@@ -1,4 +1,5 @@
 import getopt, sys
+from math import log as ln  # (log is a dolfin name too - and logg :-)
 
 # ================= dump to matlab ========================= 
 
@@ -39,3 +40,9 @@ def parseArg(*arg):
             return val
     return default_val
 
+def compute_rates(hVec,errVec):
+    rVec = []
+    for i in range(1, len(errVec)):
+	r = ln(errVec[i]/errVec[i-1])/ln(hVec[i]/hVec[i-1])
+	rVec.append(r)
+    return rVec

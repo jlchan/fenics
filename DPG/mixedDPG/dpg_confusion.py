@@ -1,17 +1,26 @@
 from dolfin import *
+import helper_confusion as chelp
+import helper_functions as help
 
 useBulkChasing = True
-numRefs = 4
-
-# Create mesh and define function space
-pU = 1
-pV = 3
-N = 16
-mesh = UnitSquareMesh(N,N)
 
 # define problem params
-eps = 1e-2
+eps = float(help.parseArg('--eps',1e-2))
+pU = int(help.parseArg('--p',1))
+N = int(help.parseArg('--N',4))
+numRefs = int(help.parseArg('--numRefs',1))
+numQRefs = int(help.parseArg('--numQRefs',4))
+
+useStrongBC = help.parseArg('--useStrongBC','False')=='True' #eval using strings
+plotFlag = help.parseArg('--plot','True')=='True' #eval using strings
+
+dp = int(help.parseArg('--dp',1))
+
+# Create mesh and define function space
+pV = pU+dp
+mesh = UnitSquareMesh(N,N)
 print "eps = ", eps
+
 beta = Expression(('.5','1.0'))
 
 u0 = Expression('0.0')
@@ -50,9 +59,6 @@ nDofs=[]
 for refIndex in xrange(numRefs):
 	# define spaces
 	U = FunctionSpace(mesh, "Lagrange", pU)
-#	Vb = FunctionSpace(mesh, "B", pV)
-#	Vc = FunctionSpace(mesh, "Lagrange", pU)
-#	V = Vc+Vb
 	V = FunctionSpace(mesh, "Lagrange", pV)
 	E = U*V
 	(u,e) = TrialFunctions(E)
@@ -61,19 +67,22 @@ for refIndex in xrange(numRefs):
 	h = CellSize(mesh)
 
 	bcs = [DirichletBC(E.sub(0), u0, inflow)] # boundary conditions on u
-	bcs.append(DirichletBC(E.sub(0), zero, outflow)) # boundary conditions on u
-#	bcs.append(DirichletBC(E.sub(1), zero, inflow)) # error boundary condition
 	bcs.append(DirichletBC(E.sub(1), zero, outflow)) # error boundary condition
+	if useStrongBC:
+		bcs.append(DirichletBC(E.sub(0), zero, outflow)) # boundary conditions on u
 
 	def ip(e,v):
-		return inner(dot(beta,grad(e)),dot(beta,grad(v)))*dx + eps*inner(grad(e),grad(v))*dx + inner(eps*inflowIndicator*e,v)*ds
-#		return inner(dot(beta,grad(e)),dot(beta,grad(v)))*dx + eps*inner(grad(e),grad(v))*dx + inner(e,v)*dx
+		#return inner(dot(beta,grad(e)),dot(beta,grad(v)))*dx + eps*inner(grad(e),grad(v))*dx + inner(eps*inflowIndicator*e,v)*ds
+		return inner(dot(beta,grad(e)),dot(beta,grad(v)))*dx + eps*inner(grad(e),grad(v))*dx + inner(e,v)*dx
 	
 	def b(u,v):
-		return inner(grad(u),beta*v + (eps)*grad(v))*dx - inner(eps*inflowIndicator*dot(grad(u),n),v)*ds
-#		return inner(grad(u),beta*v + (eps)*grad(v))*dx - inner(eps*inflowIndicator*dot(grad(u),n),v)*ds - inner(eps*outflowIndicator*dot(grad(v),n),u)*ds 
+		fieldForm = inner(dot(beta,n)*u,v)*ds + inner(-u,dot(beta,grad(v)))*dx + eps*inner(grad(u),grad(v))*dx 
+		if useStrongBC: # strong outflow
+			return fieldForm - inner(eps*dot(grad(u),n),v)*ds 
+		else: # nitsche type of weak BC
+			return fieldForm - inner(eps*dot(grad(u),n),v)*ds - inner(eps*outflowIndicator*u,dot(grad(v),n))*ds
 
-	a = b(u,v) + b(du,e) + ip(e,v)
+	a = b(u,v) + b(du,e) + ip(e,v) 
 
 	f = Expression('0.0')
 	x = V.cell().x

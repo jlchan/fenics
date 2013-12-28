@@ -1,32 +1,33 @@
 from dolfin import *
+from numpy import array, argsort, amax
+from math import ceil
 
-# Create mesh and define function space
-pU = 2
-pV = 3
-N = 8
+import helper_functions as help
+import helper_confusion as chelp
+
+# Create mesh and definene function space
+eps = float(help.parseArg('--eps',1e-2))
+pU = int(help.parseArg('--p',1))
+N = int(help.parseArg('--N',4))
+
+useStrongBC = help.parseArg('--useStrongBC','False')=='True' #eval using strings
+plotFlag = help.parseArg('--plot','True')=='True' #eval using strings
+
+dp = int(help.parseArg('--dp',1))
+
+pV = pU+dp
 mesh = UnitSquareMesh(N,N)
 
 # define problem params
+print "eps = ", eps
 beta = Expression(('1.0','0.0'))
-eps = 1e-0
-uex = Expression('sin(x[1]*pi*2)')
-#uex = Expression('(exp(r1*(x[0]-1))-exp(r2*(x[0]-1)))/(exp(-r1)-exp(-r2))*sin(pi*x[1])',eps = eps,pi = 2*acos(0.0), r1 = (-1+sqrt(1+4*pi*pi*eps*eps))/(-2*eps),r2 = (-1-sqrt(1+4*pi*pi*eps*eps))/(-2*eps))
+ue = chelp.erikkson_solution(eps)
+grad_ue = chelp.erikkson_solution_gradient(eps)
 
-zero = Constant('0.0')
+zero = Expression('0.0')
 
-def u0_boundary(x, on_boundary):
-	return on_boundary
-def inflow(x):
-	return abs(x[0]) < 1E-14 
-def outflow(x):
-	return abs(x[0]-1) < 1E-14 or abs(x[1]) < 1E-14 or abs(x[1]-1) < 1E-14
-class Inflow(Expression):
-	def eval(self, values, x):
-		values[0] = 0.0
-		if inflow(x):
-			values[0] = 1.0
-infl = Inflow()
-outfl = Expression('1.0')-infl
+infl = chelp.Inflow()
+outfl = 1-infl
 
 # define spaces
 U = FunctionSpace(mesh, "Lagrange", pU)
@@ -36,68 +37,67 @@ E = U*V
 (du,v) = TestFunctions(E)
 n = FacetNormal(mesh)
 h = CellSize(mesh)
-x = V.cell().x
+
+bcs = []
+bcs.append(DirichletBC(E.sub(1), zero, chelp.outflow)) # error boundary condition
+bcs.append(DirichletBC(E.sub(0), ue, chelp.inflow)) # boundary conditions on u
+if useStrongBC:
+	bcs.append(DirichletBC(E.sub(0), ue, chelp.outflow)) # boundary conditions on u
 
 def ip(e,v):
-	return inner(dot(beta,grad(e)),dot(beta,grad(v)))*dx + eps*inner(e,v)*dx + eps*inner(grad(e),grad(v))*dx + inner(infl*e,v)*ds
+	return inner(dot(beta,grad(e)),dot(beta,grad(v)))*dx + eps*inner(grad(e),grad(v))*dx #+ eps*inner(infl*e,v)*ds + eps*inner(outfl*dot(grad(e),n),dot(grad(v),n))*ds
 
 def b(u,v):
-	return inner(outfl*dot(beta,n)*u,v)*ds + inner(u,-dot(beta,grad(v)))*dx + eps*inner(grad(u),grad(v))*dx - inner(eps*infl*dot(grad(u),n),v)*ds
+	fieldForm = inner(dot(beta,n)*u,v)*ds + inner(-u,dot(beta,grad(v)))*dx + eps*inner(grad(u),grad(v))*dx 
+	if useStrongBC: # strong outflow
+		return fieldForm - inner(eps*dot(grad(u),n),v)*ds 
+	else: # nitsche type of weak BC
+		return fieldForm - inner(eps*dot(grad(u),n),v)*ds - inner(eps*outfl*u,dot(grad(v),n))*ds 
 
-def l(v):
-	f = Expression('0.0')
-	return inner(f,v)*dx - inner(infl*dot(beta,n)*uex,v)*ds
+a = b(u,v) + b(du,e) + ip(e,v) #+ eps*inner(outfl*u,du)*ds
 
-def Q(du):
-	f = conditional(le( (x[1]-.5)**2 + (x[0]-.5)**2,  .01), 1.0, 0.0) # discontinuous forcing data in circle
-	return inner(f,du)*dx
+f = Expression('0.0')
+x = V.cell().x
+L = inner(f,v)*dx 
 
-
-def m(u,du):
-	return inner(u,du)*dx + inner(dot(grad(u),beta),dot(grad(du),beta))*dx + eps*inner(grad(u),grad(du))*dx + eps*inner(infl*dot(grad(u),n),dot(grad(duh),n))*ds
-
-a = b(u,v) + b(du,e) + ip(e,v)
 uSol = Function(E)
-bcs = [DirichletBC(E.sub(0), zero, inflow), DirichletBC(E.sub(1), zero, outflow)]
-#bcs = [DirichletBC(E.sub(0), zero, u0_boundary), DirichletBC(E.sub(1), zero, u0_boundary)]
-solve(a==Q(-du), uSol, bcs)
+solve(a==L, uSol, bcs)
 (u,e) = uSol.split()
 
-fineMesh = refine(mesh)
-fineMesh = refine(fineMesh)
-#fineMesh = refine(fineMesh)
+	
+fineMesh = chelp.quadrature_refine(mesh,N,numQRefs)
+fineSpace = FunctionSpace(fineMesh, "Lagrange", pU+2)
+uF = interpolate(u,fineSpace)
+L2err = (ue-uF)**2*dx
+l_err = sqrt(assemble(L2err))
+hh = (1.0/N)*.5**float(refIndex)
 
-fineSpace = FunctionSpace(fineMesh, "Lagrange", pU)
-uF = interpolate(u, fineSpace)
-eF = interpolate(e, fineSpace)
+print "on refinement ", refIndex
+energy = ip(e,e)
+totalE = sqrt(assemble(energy))
 
-# ===================== Trying Uzawa =========================
+H1err = (grad_ue-grad(uF))**2*dx
+edge_error = infl*1/h*(ue-uF)**2*ds
+n_err = sqrt(assemble(eps*edge_error + eps*H1err + L2err))
+nitscheErrVec.append(n_err)
 
-#(e,z)_V = <f-Au,z>
-#(uh,v) = (uh,v) + (e,v)
-r = TrialFunction(V)
-z = TestFunction(V)
-uh = TrialFunction(U)
-duh = TestFunction(U)
-rk = Function(V)
-uhk = Function(U)
-#bcU = DirichletBC(U, zero, inflow) # error boundary condition
-#bcV = DirichletBC(V, zero, outflow) # error boundary condition
-bcU = DirichletBC(U, zero, u0_boundary) # error boundary condition
-bcV = DirichletBC(V, zero, u0_boundary) # error boundary condition
+print "h, ", hh , ", L2 error = ", l_err, ", e = ", totalE	
 
-M = m(uh,duh)
-b = Q(duh) #inner(uhk,duh)*dx + b(duh,rk) #inner(Adjoint(rk),duh)*dx
-solve(M==b,uhk,bcU)	
-#solve(M==b,uhk)	
+if plotFlag:
+	# Plot solution
+	fineMesh = mesh
+	for ref in xrange(pU-1):
+		fineMesh = refine(fineMesh)
+		fineSpace = FunctionSpace(fineMesh, "Lagrange", 1)
+	uF = interpolate(u, fineSpace)
+	eF = interpolate(e, fineSpace)
+	err = ue-uF
+	plot(uF)
+	plot(eF)
+	plot(mesh)
+	#plot(err)
+	interactive()
 
-#exit(0)
-# ===================== Trying Uzawa =========================
-
-plot(uF)
-plot(interpolate(uhk,fineSpace))
-
-interactive()
 
 #file = File('u.pvd')
 #file << uF
