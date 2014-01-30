@@ -4,8 +4,8 @@
 \usepackage[top=2cm,bottom=3cm,left=3.5cm,right=3.5cm]{geometry}
 \usepackage[utf8]{inputenc}
 \usepackage{amsmath,amssymb,amsfonts,mathrsfs}
-\let\proof\relax 
-\let\endproof\relax
+%\let\proof\relax 
+%\let\endproof\relax
 \usepackage{listings}
 \usepackage{array}
 \usepackage{mathtools}
@@ -129,7 +129,8 @@
 
 \newtheorem{remark}{Remark}
 
-\title{A minimum-residual finite element method for the convection-diffusion equation}
+%\title{A minimum-residual finite element method for the convection-diffusion equation}
+\title{A Dual Petrov-Galerkin finite element method for the convection-diffusion equation}
 \author{Jesse Chan, John A. Evans, Weifeng Qiu}
 \date{}
 \begin{document}
@@ -137,10 +138,9 @@
 \maketitle
 
 \begin{abstract}
-We present a minimum-residual finite element method for convection-diffusion problems in a higher order, adaptive, continuous Galerkin setting.  The method borrows concepts from both the Discontinuous Petrov-Galerkin (DPG) method by Demkowicz and Gopalakrishnan \cite{DPG2} and the method of variational stabilization by Dahmen et al.\ \cite{DahmenVariationalStabilization}, and it can also be interpreted as a variational multiscale method in which the fine-scales are defined through a dual-orthogonality condition.  A key ingredient in the method is the proper choice of norm used to measure the residual, and we present two alternatives which are observed to be robust in both convection and diffusion-dominated regimes.  Numerically obtained convergence rates are given in 2D, and benchmark numerical examples in all space dimensions are shown to illustrate the behavior of the method.
+We present a minimum-residual finite element method for convection-diffusion problems in a higher order, adaptive, continuous Galerkin setting.  The method borrows concepts from both the Discontinuous Petrov-Galerkin (DPG) method by Demkowicz and Gopalakrishnan \cite{DPG2} and the method of variational stabilization by Cohen, Dahmen, and Welper \cite{DahmenVariationalStabilization}, and it can also be interpreted as a variational multiscale method in which the fine-scales are defined through a dual-orthogonality condition.  A key ingredient in the method is the proper choice of norm used to measure the residual, and we present two choices which are observed to be robust in both convection and diffusion-dominated regimes.  Numerically obtained convergence rates are given in 2D, and benchmark numerical examples are given to illustrate the behavior of the method.
 \end{abstract}
 
-%\tableofcontents
 %\begin{keywords}\end{keywords}
 %\begin{AMS}\end{AMS}
 
@@ -150,10 +150,9 @@ It is well known that the standard Galerkin finite element method performs very 
 
 A connection can be drawn between residual-based stabilized methods and Petrov-Galerkin schemes, where the trial (approximating) functions and test (weighting) functions are allowed to differ.  Specifically, the SUPG method can be interpreted as a modification of standard test functions\footnote{We note that one cannot recover the SUPG formulation beginning with the strong form of the equations and the SUPG test functions; the interpretation of SUPG as a Petrov-Galerkin scheme holds only locally, on element interiors.}, biasing them in the upwind direction based on mesh size, order of polynomial approximation, the magnitude of convection, and the diffusion parameter.  More recently, the concept of Petrov-Galerkin methods has been connected to a novel \textit{minimum residual} framework -- it is shown that the minimization of a specific residual corresponding to a variational formulation naturally leads to the concept of optimal test functions \cite{overviewDPG}.  
 
-Optimal test functions resulting from residual minimization were first implemented by Demkowicz and Gopalakrishnan in \cite{DPG2,DPG1}.  The connection between stabilization and least squares/minimum residual methods has been observed previously \cite{GLS}; however, the DPG method distinguishes itself by measuring the residual of the operator form of the equation, which is posed in the dual space.  Soon after, Cohen, Dahmen and Welper introduced an alternative saddle-point formulation of such a minimum residual method in \cite{DahmenVariationalStabilization}, which alluded to a Variational Multiscale (VMS) perspective \cite{VMS1,VMS2,HughesVMS}.  
+Optimal test functions resulting from residual minimization were first implemented by Demkowicz and Gopalakrishnan in \cite{DPG2,DPG1}.  The connection between stabilization and least squares/minimum residual methods has been observed previously \cite{GLS}; however, the Discontinuous Petrov-Galerkin method distinguishes itself by measuring the residual of the operator form of the equation, which is posed in the dual space.  Independently, Cohen, Dahmen and Welper introduced an alternative saddle-point formulation of such a minimum residual method in \cite{DahmenVariationalStabilization}, which alluded to a Variational Multiscale (VMS) perspective \cite{VMS1,VMS2,HughesVMS}.  We refer to the method of Cohen, Dahmen, and Welper as a Dual Petrov-Galerkin method, which distinguishes itself from the Discontinuous Petrov-Galerkin method in that it does not use a broken test space.  
 
-
-The goal of this paper is three-fold.  The first is to present a method which borrows concepts from each of these recent works and to derive a more detailed connection between the Petrov-Galerkin, stabilized, and VMS perspectives of minimum-residual methods.  The second is to demonstrate that the proposed method is robust in both convection and diffusion-dominated regimes provided the dual norm used to measure the residual is chosen intelligently.  The last goal is to show that the method is stable for arbitrary higher order and adaptive meshes, easily implemented using existing finite element codes and technologies, and extendable to three-dimensional convection-diffusion problems.
+The goal of this paper is three-fold.  The first is to present a method which borrows concepts from each of these recent works and to derive a more detailed connection between the Petrov-Galerkin, stabilized, and VMS perspectives of minimum-residual methods.  The second is to demonstrate that the proposed method is robust in both convection and diffusion-dominated regimes provided the dual norm used to measure the residual is chosen intelligently.  The last goal is to show that the method is stable for arbitrary higher order and adaptive meshes and easily implemented using existing finite element codes and technologies. %and extendable to three-dimensional convection-diffusion problems.
 
 \section{A minimum-residual method}
 
@@ -236,10 +235,10 @@ At the moment, $V$ remains an infinite-dimensional space, and in practice, will 
 %\caption{Saddle point system for minimization of $J(u_h)$; the Schur complement eliminating degrees of freedom for $e$ returns the system resulting from optimal test functions.}
 %\end{figure}
 
-This formulation was first introduced by Dahmen et al.\ in \cite{DahmenVariationalStabilization}, where $V_h$ was determined adaptively.  The method proceeded in two steps -- first, $V_h$ was set equal to $U_h$ on what we will define as the \textit{coarse mesh}.  Next, \textit{a posteriori} error estimators for $e$ (based on a specific choice of inner product $\LRp{\cdot,\cdot}_V$) were used to drive adaptivity to determine a fine-scale mesh on which $V_h$ was supported.  We choose a simpler representation -- if $U_h$ is represented by piecewise polynomials of order $p$, we set $V_h$ to be piecewise polynomials of order $p+\triangle p$.  We note that these two choices of discretization for $V$ are not mutually exclusive, and that novel choices for $V_h$ are likely the key to yielding computationally effective methods under this framework.  
+This formulation was first introduced by Cohen, Dahmen, and Welper in \cite{DahmenVariationalStabilization}, where $V_h$ was determined adaptively.  The method proceeded in two steps -- first, $V_h$ was set equal to $U_h$ on what we will define as the \textit{coarse mesh}.  Next, \textit{a posteriori} error estimators for $e$ (based on a specific choice of inner product $\LRp{\cdot,\cdot}_V$) were used to drive adaptivity to determine a fine-scale mesh on which $V_h$ was supported.  We choose a simpler representation -- if $U_h$ is represented by piecewise polynomials of order $p$, we set $V_h$ to be piecewise polynomials of order $p+\triangle p$.  We note that these two choices of discretization for $V$ are not mutually exclusive, and that novel choices for $V_h$ are likely the key to yielding computationally effective methods under this framework.  
 \subsection{DPG optimal test function framework}
 
-The DPG method was introduced by Demkowicz and Gopalakrishnan in 2009, and rapidly applied to a series of problems in computational mechanics \cite{DPG2,DPG3,DPG4,maxwellDPG,stokesDPG}.  Though the DPG method shares the same variational setting as Dahmen et al.\, each method followed very different approaches in implementation.  Recall the orthogonality of error~\eqref{rieszOrthog}; by defining the error representation function $e$ and undoing the Riesz map acting on $B\delta u$, we recovered a saddle point formulation.  However, it is possible instead to undo the Riesz map acting on the residual, to recover
+The DPG method was introduced by Demkowicz and Gopalakrishnan in 2009, and rapidly applied to a series of problems in computational mechanics \cite{DPG2,DPG3,DPG4,maxwellDPG,stokesDPG}.  Though the DPG method shares the same variational setting as Cohen et al.\, each method followed very different approaches in implementation.  Recall the orthogonality of error~\eqref{rieszOrthog}; by defining the error representation function $e$ and undoing the Riesz map acting on $B\delta u$, we recovered a saddle point formulation.  However, it is possible instead to undo the Riesz map acting on the residual, to recover
 \begin{align*}
 \LRp{R_V^{-1}\LRp{l-Bu_h},R_V^{-1}B\delta u}_V &= 0, \quad \forall \delta u \in U_h\\
 \Rightarrow \LRa{\LRp{l-Bu_h},R_V^{-1}B\delta u}_{V^*\times V} &= 0\\
@@ -314,7 +313,7 @@ u_h \in U_h, u' \in U, v \in V\\
 \end{align*}
 The saddle point formulation of Section~\ref{sec:saddlePoint} can be interpreted as solving not for $u'$, but for $e\coloneqq Tu'$.  The discrete approximation then follows directly from setting $V \coloneqq V_h$, some finite-dimensional enriched space, which impacts the method through the approximation of $Tu'$ via approximation of the Riesz map $R_V^{-1}$.  
 
-To summarize, the minimum-residual framework motivating both Dahmen's variational stabilization and Demkowicz and Gopalakrishnan's DPG method can be characterized as a VMS method under which 
+To summarize, the minimum-residual framework motivating both Cohen, Dahmen, and Welper's variational stabilization and Demkowicz and Gopalakrishnan's DPG method can be characterized as a VMS method under which 
 \begin{itemize}
 \item Orthogonality of $U_h$ and $U'$ is defined through a nonstandard \textit{energy inner product} $$\LRp{u',\delta u}_E = 0, \quad\forall \delta u \in U_h,$$ 
 \item A change of variables (i.\ e.\ solving for $Tu'$ instead of $u'$) symmetrizes the fine-scale contribution and overall system.
@@ -335,16 +334,18 @@ which represents the convection of some quantity $u$ subject to a convection fie
 \end{align*}
 where the following boundaries are defined as 
 \begin{align*}
-\Gamma_{\rm in}\coloneqq \LRc{x\in \partial \Omega:  \beta\cdot\vec{n}(x) < 0}\\
+\Gamma_{\rm in}\coloneqq \LRc{x\in \partial \Omega:  \beta\cdot\vec{n}(x) \leq 0}\\
 \Gamma_{\rm out}\coloneqq \LRc{x\in \partial \Omega: \beta\cdot\vec{n}(x) > 0}
 \end{align*}
 where $\vec{n}(x)$ is the outward normal at a point on the boundary $\partial \Omega$.  If it is non-empty, we may also define $\Gamma_{0}\coloneqq \LRc{x\in \partial \Omega s.\ t.\ \beta\cdot\vec{n}(x) = 0}$ as the boundary with outward normal orthogonal to the streamline.  For the remainder of this paper, we treat non-homogeneous boundary conditions as lifted forcing data, and consider only the homogeneous case.  
 
 For $u\in H^1_0(\Omega)$, our weak formulation becomes
 \[
-\LRp{\Grad u,\beta v + \epsilon \Grad v}_{\L} = \LRp{f,v}_{\L}, \quad \forall v \in H^1_0
+\LRp{\Grad u,\beta v + \epsilon \Grad v}_{\L} = \LRp{f,v}_{\L}, \quad \forall v \in H^1_0.
 \]
 A norm based on the symmetric part of the bilinear form was explored in \cite{DahmenVariationalStabilization}, but yielded approximations which degnerated in $\epsilon$.  We present here two different methods based on alternative choices for test norms on $V$ for the convection-diffusion equation that both yield good results as $\epsilon\rightarrow 0$.  
+
+We note that the first-order term $\LRp{\Grad u,\beta v}$ may also be integrated by parts.  The two are equivalent for $\div \beta = 0$ and give nearly identical results.
 
 \subsection{Weighted streamline diffusion norm}
 
@@ -397,9 +398,10 @@ The addition of the term $\epsilon\int_{\Gamma_{\rm in}} \pd{u}{n}v$ is akin to 
 \[
 (\Grad \delta u, \beta e + \epsilon \Grad e)_{\L} - \epsilon\int_{\Gamma_{\rm in}} \pd{\delta u}{n}e = 0, \quad \forall \delta u \in U_h
 \]
-If $U_h$ is taken to be a polynomial space of order $p$, the first term enforces orthogonality of $\beta e + \epsilon \Grad e$ to polynomials of order $p-1$ on the interior, while the second term enforces orthogonality of $e$ to polynomials of order $p-1$ on the subset of the boundary $\Gamma_{\rm in}$.  If $e$ is represented by a polynomial of order $p-1$, then this condition reduces to strong enforcement of $\left. e\right|_{\Gamma_{\rm in}}=0$ \cite{brenner2008mathematical}.  This boundary condition is released in the limit as $\epsilon \rightarrow 0$; as a result, for small $\epsilon$, the contribution $\LRp{e,v}_V$ no longer provides an extraneous stabilization at the inflow for under-resolved meshes, improving the resulting solution $u$.  However, for large $\epsilon$, the boundary condition activates and $e$ recovers homogeneous boundary conditions over the entire space $V$.  The choice of weight $w(x)$ in the previous section can be seen as similarly removing the contribution of $e$ near the inflow for small $\epsilon$, but allowing it to return for large $\epsilon$.  
+If $U_h$ is taken to be a polynomial space of order $p$, the first term enforces orthogonality of $\beta e + \epsilon \Grad e$ to polynomials of order $p-1$ on the interior, while the second term enforces orthogonality of $e$ to polynomials of order $p-1$ on the subset of the boundary $\Gamma_{\rm in}$.  %If $e$ is represented by a polynomial of order $p-1$, then this condition reduces to strong enforcement of $\left. e\right|_{\Gamma_{\rm in}}=0$ \cite{brenner2008mathematical}.  
+This boundary condition is released in the limit as $\epsilon \rightarrow 0$; as a result, for small $\epsilon$, the contribution $\LRp{e,v}_V$ no longer provides extraneous stabilization at the inflow for under-resolved meshes.  However, for large $\epsilon$, the boundary condition activates and $e$ recovers homogeneous boundary conditions over the entire space $V$.  The choice of weight $w(x)$ in the previous section can be seen as similarly removing the contribution of $e$ near the inflow for small $\epsilon$, but allowing it to return for large $\epsilon$.  
 
-A comparison between the weighted norm $\nor{v}_{V,w}$ with $e\in H^1_0(\Omega)$ and unweighted norm with $e\in H^1_{\rm out}$ in one dimension is given in Figure~\ref{fig:robustComparison1D}.  
+A comparison between the weighted norm $\nor{v}_{V,w}$ with $e\in H^1_0(\Omega)$ and unweighted norm with $e\in H^1_{\rm out}$ in one dimension is given in Figure~\ref{fig:robustComparison1D}.   We note that Broersen and Stevenson have also achieved good results by making use of the space $H^1_{\rm out}(\Omega)$ in their application of the DPG method to the mixed mild-weak formulation for convection-diffusion \cite{broersenStevenson}.
 \begin{figure}[!h]
 \centering
 \subfigure[Solution $u$]{\includegraphics[scale=.22]{figs/robustComparison1D.png}}
@@ -409,9 +411,7 @@ A comparison between the weighted norm $\nor{v}_{V,w}$ with $e\in H^1_0(\Omega)$
 \end{figure}
 
 \begin{remark}
-We remark that this inclusion of $\epsilon\int_{\Gamma_{\rm in}} \pd{u}{n}v$ is a variational crime under the assumption that $u \in H^1_0(\Omega)$; the proper way to include such a term in a conforming manner (without introducing additional regularity assumptions on $u$) would be to introduce $\epsilon \pd{u}{n}$ as an additional unknown on the boundary, similar to the work done using DPG under the ultra-weak formulation \cite{DPG2,analysisDPG}.  However, we have found that doing so does not remove the boundary layer in the residual at the inflow, and numerical results appear to degenerate in quality as $\epsilon$ grows smaller and smaller.  We believe this is due to the fact that, by decoupling $\epsilon \pd{u}{n}$ as an additional unknown, the orthogonality boundary condition $\int_{\Gamma_{\rm in}} \pd{u}{n} e = 0$ is decoupled from the interior integrals and enforced strongly.\footnote{The same situation occurs when $\pd{u}{n}$ is declared as an additional unknown and when $\epsilon > 0$.}
-
-We note that Broersen and Stevenson have also achieved good results by making use of the space $H^1_{\rm out}(\Omega)$ in their application of the DPG method to the mixed mild-weak formulation for convection-diffusion \cite{broersenStevenson}.  The mild-weak formulation effectively enforces the orthogonality of $e$ to polynomials of lower order on $\Gamma_{\rm in}$ in a conforming manner, by introducing an additional flux unknown representing $\epsilon \pd{u}{n}$.  
+We remark that this inclusion of $\epsilon\int_{\Gamma_{\rm in}} \pd{u}{n}v$ is a variational crime under the assumption that $u \in H^1_0(\Omega)$; the proper way to include such a term in a conforming manner (without introducing additional regularity assumptions on $u$) would be to introduce $\epsilon \pd{u}{n}$ as an additional unknown on the boundary, similar to the work done using DPG under the ultra-weak formulation \cite{DPG2,analysisDPG}.  However, we have found that doing so does not remove the boundary layer in the residual at the inflow, and numerical results appear to degenerate in quality as $\epsilon$ grows smaller and smaller.  We believe this is due to the fact that, by identifying $\epsilon \pd{u}{n}$ as an additional unknown, the orthogonality boundary condition $\int_{\Gamma_{\rm in}} \pd{u}{n} e = 0$ is decoupled from the interior integrals and enforced strongly.  The same situation occurs when $\pd{u}{n}$ is declared as an additional unknown and when $\epsilon > 0$.  %The mild-weak formulation effectively enforces the orthogonality of $e$ to polynomials of lower order on $\Gamma_{\rm in}$ in a conforming manner, by introducing an additional flux unknown representing $\epsilon \pd{u}{n}$.  
 
 %For many flow problems, activity near the inflow is typically very smooth and can thus be represented using a minimal number of elements under an effective adaptive mesh refinement scheme, implying that the cost of introducing such additional unknowns on $\Gamma_{\rm in}$ can be minimized.  However, since the codebase we currently use does not feature unknowns with support only on element edges/faces, we continue to operate under this variational crime, in hopes that we can implement a conforming version in the near future.  %Another way to properly include the term $\epsilon \pd{u}{n}$ in the variational formulation would be to work with higher continuity trial spaces that admit a normal trace of the derivative on the boundary \cite{nurbsTrace, NURBSorig}.  
 \end{remark}
@@ -436,11 +436,47 @@ We will utilize this second version of the method for all following numerical ex
 We note that, when the Peclet number ${\rm Pe} = \frac{\LRb{\beta} L}{\epsilon} \gg 1$, the boundary term $\epsilon\int_{\Gamma_{\rm in}} \pd{u}{n}v$ effectively disappears, and numerically speaking, we can use $e,v\in H^1_{\rm out}(\Omega)$ without including the additional boundary term in the variational formulation.  
 \end{remark}
 
+\subsection{Stability for small $\epsilon$}
+While a full stability theory has not yet been developed, Brezzi theory for mixed methods allows us to demonstrate stability for $\epsilon \ll h$, where $h$ is the mesh size.  
+\begin{lemma}
+
+\end{lemma}
+\begin{proof}
+Fred did this and this.
+Fred did this and this.
+Fred did this and this.
+Fred did this and this.
+\end{proof}
+
+
 \section{Numerical examples}
 
-We present several numerical examples, demonstrating rates of convergence and performance of the method on several benchmark problems in 2D.  All numerical examples were implemented in the Python-based FEniCS codebase \cite{LoggMardalEtAl2012a} to demonstrate that, unlike previous methods based upon the minimization of dual residuals, this method is easily implemented in most standard high-order finite element codes.  
+We present several numerical examples, demonstrating rates of convergence and performance of the method on several benchmark problems in 2D.  All numerical examples were executed using the %Python-based
+ FEniCS codebase \cite{LoggMardalEtAl2012a} to demonstrate that, unlike previous methods based upon the minimization of dual residuals, this method is easily implemented in most standard high-order finite element codes.  
 
-A remaining choice to be specified is the discretization of $V_h$: if $U_h$ is given to be polynomials of order $p$, the enriched space $V_h$ under which the fine-scales are approximated is set to be polynomials of order $p+\triangle p$ -- in other words, we use a simple polynomial enrichment scheme over a fixed mesh to approximate the fine-scale error representation function $e$.  In all experiments, $\triangle p = 1$ has been found to be sufficient, and larger $\triangle p$ has not been found to have a significant effect on the behavior of the method.  This is in contrast to the original DPG method, which also adopts a polynomial enriched space (where enrichment is done locally over each element) -- results by Gopalakrishnan and Qiu in \cite{practicalDPG} suggest that only $\triangle p \geq d$, where $d$ is spatial dimension, is guaranteed to yield optimal convergence rates for Laplace's equation.  
+A remaining choice to be specified is the discretization of $V_h$: if $U_h$ is given to be polynomials of order $p$, the enriched space $V_h$ under which the fine-scales are approximated is set to be polynomials of order $p+\triangle p$ -- in other words, we use a simple polynomial enrichment scheme over a fixed mesh to approximate the fine-scale error representation function $e$.  In all experiments, $\triangle p = 1$ has been found to be sufficient, and larger $\triangle p$ has not been found to have a significant effect on the behavior of the method.  Table~\ref{tab:dp} shows the effect of increased $\triangle p$ on a uniform mesh; there is less than $.5\%$ change in $L^2$ error between $\triangle p = 1$ and $\triangle p=2$, and less than $.1\%$ change between $\triangle p=2$ and $\triangle p = 3$.\footnote{This is in contrast to the original DPG method, which also adopts a polynomial enriched space (where enrichment is done locally over each element) -- results by Gopalakrishnan and Qiu in \cite{practicalDPG} suggest that only $\triangle p \geq d$, where $d$ is spatial dimension, is guaranteed to yield optimal convergence rates for Laplace's equation. However, it is unknown if these results carry over to this new formulation.}
+
+%Numerical experiments indicate that the measure of energy error is fairly insensitive to the degree of enrichment of $V_h$, so we expect that only a moderately finer resolution of $V_h$ with respect to $U_h$ is sufficient to capture fine-scale effects.  %More investigation is necessary to determine the nature of the energy norm induced by this method.  
+
+\begin{figure}[!h]
+\centering
+  \begin{tabular}{| l || c | c | c | c| }
+   \hline
+    Order & Energy, $\epsilon=1$ & $L^2$, $\epsilon=1$  & Energy, $\epsilon=10^{-4}$ & $L^2$, $\epsilon=10^{-4}$\\
+    \hline
+    $\triangle p=1$ & 0.228580909 &  0.012003627 & 0.130406706 & 0.126763142
+    \\ \hline
+    $\triangle p=2$ &    0.230296524 &  0.011963812 & 0.130408851&    0.126763338
+    \\ \hline
+    $\triangle p=3$ &     0.230781435 & 0.011953146  &    0.130410190 &   0.126763389
+    \\ \hline
+    $\triangle p=4$ &    0.230900562 &  0.011950356 &   0.130410964 &  0.126763422
+    \\ \hline
+    \hline
+  \end{tabular}
+\caption{Effect of $\triangle p$ on $L^2$ and energy error.}
+\label{tab:dp}
+\end{figure}
 
 We report only $L^2$ errors for each example, due to the fact that $H^1$ error is not a well-defined quantity as $\epsilon \rightarrow 0$.  As a consequence, during adaptive refinement, the error does not always monotonically decrease or behave as expected, since adaptive refinement is driven by the the quantity $\nor{u-u_h}_E = \nor{e}_V$, which we expect to be equivalent (possibly with equivalence constants depending on $\epsilon$) to the $H^1$ norm.  We do expect $\nor{u-u_h}_E$ to decrease monotonically for all $\epsilon$ (though not uniformly in $\epsilon$) due to the minimum-residual nature of our method.  
 
@@ -464,26 +500,28 @@ where
 r_{1,2,n} &= \frac{1 \pm \sqrt{1 + 4 \lambda_n}}{2 \epsilon},\\
 \lambda_n &= n^2\pi^2 \epsilon.
 \end{align*}
-We take for the exact solution the first mode, such that $C_0 = 1$, and $C_n = 0$ for $n\neq 1$.  
+We choose boundary conditions such that the exact solution is given with $C_0 = 1$ and $C_n = 0$ for $n\neq 1$.  
 \begin{align*}
 u(x,y) &= \frac{e^{r_{1}(x-1)} - e^{r_{2}(x-1)}}{e^{-r_{1}} - e^{-r_{2}}} \sin (\pi y)\\
 r_{1,2} &= \frac{1 \pm \sqrt{1 + 4 \epsilon^2 \pi^2}}{2 \epsilon},
 \end{align*}
-The problem is driven solely by inflow boundary conditions, and develops a boundary layer of width $\epsilon$ at the outflow $x = 1$.  The resulting solution is shown in Figure~\ref{fig:erikkson} for $\epsilon = 10^{-2}$, along with convergence rates of $\L$ error under uniform mesh refinement for both $p=1$ and $p=2$.  
+The problem is driven solely by inflow boundary conditions, and develops a boundary layer of width $\epsilon$ at the outflow $x = 1$.  
+The resulting solution is shown in Figure~\ref{fig:erikkson} for $\epsilon = 10^{-2}$, along with convergence rates of $\L$ error under uniform mesh refinement for various $p$.  
 \begin{figure}[!h]
 \centering
-\subfigure[Exact solution for $u$]{\includegraphics[scale = .3]{figs/erikksonExact.png}}
-\subfigure[Convergence rates for $\epsilon = 10^{-2}$]{\includegraphics[scale = .41]{figs/rates/eps1e2Rates.eps}}
+\subfigure[Exact solution for $u$]{\includegraphics[width = .4\textwidth]{figs/erikksonExact.png}}
+\subfigure[Convergence rates for $\epsilon = 10^{-2}$]{\includegraphics[width = .5\textwidth]{figs/rates/eps1e2Rates.eps}}
 \caption{Erikkson-Johnson model problem for $\epsilon = 10^{-2}$, along with convergence rates under uniform refinement.}
 \label{fig:erikkson}
 \end{figure}
-Optimal rates of convergence are not expected due to the pre-asymptotic nature of the mesh relative to the solution -- typically, $h$ must be $O(\epsilon)$ in order to observe optimal rates of convergence \cite{SchwabBoundaryLayers}.  
 
-For large diffusion -- $\epsilon = 1.0$, we do observe optimal $p+1$ rates of convergence in Figure~\ref{fig:erikkson2}.  Likewise, when $\epsilon \ll h$, we observe a sub-optimal rate of $\frac{1}{2}$, the same as the rate suggested by theory and observed numerically in \cite{broersenStevenson} due to the strong boundary layer present under small $\epsilon$.  
+Optimal rates of convergence are not expected for small $\epsilon$ due to the pre-asymptotic nature of the mesh relative to the solution -- typically, $h$ must be $O(\epsilon)$ in order to observe optimal rates of convergence \cite{SchwabBoundaryLayers}.  
+
+For large diffusion -- $\epsilon = 1.0$, we do observe optimal $p+1$ rates of convergence in Figure~\ref{fig:erikkson2}.  Likewise, when $\epsilon \ll h$, we observe a sub-optimal rate of $\frac{1}{2}$, the same as the rate suggested by theory and observed numerically in \cite{broersenStevenson} due to the strong boundary layer present under small diffusion.
 \begin{figure}[!h]
 \centering
-\subfigure[$\epsilon = 1$]{\includegraphics[scale = .4]{figs/rates/eps1e0Rates.eps}}
-\subfigure[$\epsilon = 10^{-4}$]{\includegraphics[scale = .4]{figs/rates/eps1e4Rates.eps}}
+\subfigure[$\epsilon = 1$]{\includegraphics[width = .475\textwidth]{figs/rates/eps1e0Rates.eps}}
+\subfigure[$\epsilon = 10^{-4}$]{\includegraphics[width = .475\textwidth]{figs/rates/eps1e4Rates.eps}}
 \caption{Erikkson-Johnson model problem for $\epsilon = 1$ and $\epsilon = 10^{-4}$, along with convergence rates under uniform refinement.}
 \label{fig:erikkson2}
 \end{figure}
@@ -498,35 +536,57 @@ $$\nor{v}_{V(\Omega)}^2 = \sum_{K\in \Oh} \nor{v}_{V(K)}^2,$$ where $\nor{v}_{V(
 We continue to verify our method using the Erikkson-Johnson with $\epsilon = 10^{-3}$.  The solution $u$ and the convergence/rates of $\L$ error under adaptive mesh refinement for $p=2$ are given in Figure~\ref{fig:erikksonAdapt}.  The energy error $\nor{u-u_h}_E$ is also displayed for comparison.  
 \begin{figure}[!h]
 \centering
-\subfigure{\includegraphics[scale=.39]{figs/erikkson1e3.png}}
-\subfigure{\includegraphics[scale=.445]{figs/rates/eps1e3RatesL2.eps}}
+\subfigure{\includegraphics[width = .4\textwidth]{figs/erikkson1e3.png}}
+\subfigure{\includegraphics[width = .5\textwidth]{figs/rates/eps1e3Rates.eps}}
 \caption{Erikkson-Johnson problem with $\epsilon = 10^{-3}$ under 16 refinements.}
 \label{fig:erikksonAdapt}
 \end{figure}
 
-As a result of the saddle point formulation, we can also examine the fine-scale error representation function $e$.  Figure~\ref{fig:erikksonError} displays a comparison between the error representation function after the first iteration of adaptive mesh refinement and the 16th iteration.  Recall that the main contribution to the energy error is the streamline derivative of $e$; $\nor{u-u_h}_E^2 = \nor{e}_V^2 = \nor{\beta \cdot \Grad e}_{\L}^2 + \epsilon\nor{\Grad e}_{\L}^2$. Thus, variation in the streamline direction is picked up by $\nor{\beta\cdot \Grad e}_{\L}^2$ and is the primary contribution to the total error.  After sufficient refinement and resolution of the outflow layer, the error representation function becomes smooth in the region of the boundary layer, and refinements will be placed according to the viscous error $\epsilon\nor{\Grad e}_{\L}^2$. 
+We can also examine the fine-scale error representation function $e$.  Figure~\ref{fig:erikksonError} displays a comparison between the error representation function after the first iteration of adaptive mesh refinement and the 16th iteration.  Recall that the main contribution to the energy error is the streamline derivative of $e$; $\nor{u-u_h}_E^2 = \nor{e}_V^2 = \nor{\beta \cdot \Grad e}_{\L}^2 + \epsilon\nor{\Grad e}_{\L}^2$. Thus, variation in the streamline direction is picked up by $\nor{\beta\cdot \Grad e}_{\L}^2$ and is the primary contribution to the total error.  After sufficient refinement and resolution of the outflow layer, the error representation function becomes smooth in the region of the boundary layer, and refinements will be placed according to the viscous error $\epsilon\nor{\Grad e}_{\L}^2$. 
 
 \begin{figure}[!h]
 \centering
-\subfigure{\includegraphics[scale=.345]{figs/erikkson1e3ErrUnif.png}}
-\subfigure{\includegraphics[scale=.345]{figs/erikkson1e3Err.png}}
+\subfigure{\includegraphics[width = .475\textwidth]{figs/erikkson1e3ErrUnif.png}}
+\subfigure{\includegraphics[width = .475\textwidth]{figs/erikkson1e3Err.png}}
 \caption{Comparison of the fine scale error representation $e$ under the Erikkson-Johnson problem with $\epsilon = 10^{-3}$ for the mesh at the first and $16$th refinement steps.}
 \label{fig:erikksonError}
 \end{figure}
 
-One open question concerning this method is the energy norm $\nor{u}_E$ which is induced by our choice of bilinear form and inner product on our choice of test space $V = H^1_{\rm out}$.  Figure~\ref{fig:erikksonEpsComparison} displays both $L^2$ and energy errors over a range of $\epsilon$.  We observe that the energy error appears to be, like the $\L$ error (but unlike $H^1(\Omega)$ or error in the streamline diffusion norm), independent of $\epsilon$ -- convergence does not appear to be in a norm that is equivalent to the $H^1$ norm with constants independent of $\epsilon$.  
-
-Numerical experiments indicate that the measure of energy error is fairly insensitive to the degree of enrichment of $V_h$, so we expect that only a moderately finer resolution of $V_h$ with respect to $U_h$ is sufficient to capture fine-scale effects.  More investigation is necessary to determine the nature of the energy norm induced by this method.  
+One open question concerning this method is the energy norm $\nor{u}_E$ which is induced by our choice of bilinear form and inner product on our choice of test space $V = H^1_{\rm out}$.  Figure~\ref{fig:erikksonEpsComparison} displays both $L^2$ and energy errors over a range of $\epsilon$.  We observe that the energy error appears to converge to the $L^2$ error as $\epsilon$ vanishes, however, for larger $\epsilon$, an explicit expression for the energy error has not yet been derived.  
 
 \begin{figure}[!h]
 \centering
-\includegraphics[scale=.6]{figs/rates/epsRangeComparison.eps}
-\caption{Comparison of $\L$ and energy error convergences under adaptive refinement for the Erikkson-Johnson problem for $\epsilon = 10^{-3}, 10^{-4}, 10^{-5}, 10^{-6}$.}
+\includegraphics[scale=.6]{figs/epsRangeComparison.eps}
+\caption{Comparison of $\L$ and energy error convergences under adaptive refinement for the Erikkson-Johnson problem for $\epsilon = 10^{-1}, 10^{-2}, 10^{-3}, 10^{-4}$ and $p=2$.}
 \label{fig:erikksonEpsComparison}
 \end{figure}
 
 \subsection{Discontinuous forcing and advection skew to mesh}
 
+\begin{figure}[!h]
+\centering
+\subfigure[$p=1$]{\includegraphics[width = .475\textwidth]{figs/skewToMeshP1Unif.png}}
+\subfigure[$p=2$]{\includegraphics[width = .475\textwidth]{figs/skewToMeshP2Unif.png}}
+\caption{Solution $u$ for advection skew to mesh with the upper-left hand corner discontinuity under both linear and quadratic uniform meshes.}
+\label{fig:skewUnif}
+\end{figure}
+We examine first advection skew to the mesh, a common benchmark problem for convection-diffusion.  
+\[
+u = \begin{cases}
+1 \text{ if } x = 0 \text{ or } y = 0 \text{ and } x< .5\\
+0 \text{ otherwise},
+\end{cases}
+\]
+Under such an example, a boundary layer develops at the outflow boundaries $x,y = 1$, and an internal layer develops due to the fact that the discontinuity in $f$ is parallel to the streamline.  We note that under the uniform meshes in Figure~\ref{fig:skewUnif} the method appears to deliver similar results to SUPG, and the discontinuity is convected across the domain in a minimially diffusive manner.  
+%We avoid both the above ``fixes'' in order to more cleanly demonstrate the behavior of automatic adaptive mesh refinement; however, we note that under the uniform meshes in Figure~\ref{fig:skewUnif}, or under adaptive refinement schemes that avoids the corner singularity, the method appears to deliver similar results to SUPG.  
+\begin{figure}[!h]
+\centering
+\subfigure{\includegraphics[width=.32\textwidth]{figs/DiscontinuousForcing.png}}
+\subfigure{\includegraphics[width=.32\textwidth]{figs/DiscontinuousForcingMesh.png}}
+\subfigure{\includegraphics[width=.32\textwidth]{figs/DiscontinuousForcingZoom.png}}
+\caption{Model problem with $\epsilon = 10^{-3}$ and discontinuous forcing $f$.}
+\label{fig:discForcing}
+\end{figure}
 We consider next a slight variant of a model problem introduced by Hughes and Sangalli in \cite{HughesVMS}.  The domain $\Omega$ is again taken to be the unit square, $\beta$ is taken to be $\beta = [.5,1]$, and $\epsilon = 10^{-3}$.  Homogeneous Dirichlet boundary conditions are taken over the entire boundary, and the problem is driven by a discontinuous forcing term $f(x,y)$, where
 \[
 f(x,y) = \begin{cases}
@@ -535,71 +595,47 @@ f(x,y) = \begin{cases}
 \end{cases}
 \]
 Under such an example, a boundary layer develops at the outflow boundaries $x,y = 1$, and an internal layer develops due to the fact that the discontinuity in $f$ is parallel to the streamline.  Figure~\ref{fig:discForcing} displays the solution and mesh resulting from 16 automatic mesh refinement iterations.  
-\begin{figure}[!h]
-\centering
-\subfigure{\includegraphics[scale=.43]{figs/DiscontinuousForcing.png}}
-\subfigure{\includegraphics[scale=.43]{figs/DiscontinuousForcingMesh.png}}
-\caption{Model problem with $\epsilon = 10^{-3}$ and discontinuous forcing $f$.}
-\label{fig:discForcing}
-\end{figure}
-Figure~\ref{fig:discForcing2} displays a zoom of the solution and convergence history of the energy error.
-\begin{figure}[!h]
-\centering
-\subfigure{\includegraphics[scale=.357]{figs/DiscontinuousForcingZoom.png}}
-\subfigure{\includegraphics[scale=.45]{figs/rates/eps1e3DiscontinuousForcing.eps}}
-\caption{Zoom on the upper right-hand corner of the mesh for $f$ discontinuous, along with convergence of energy error $\nor{u-u_h}_E$.}
-\label{fig:discForcing2}
-\end{figure}
+%Figure~\ref{fig:discForcing2} displays a zoom of the solution and convergence history of the energy error.
+%\begin{figure}[!h]
+%\centering
+%
+%\subfigure{\includegraphics[scale=.45]{figs/rates/eps1e3DiscontinuousForcing.eps}}
+%\caption{Zoom on the upper right-hand corner of the mesh for $f$ discontinuous.}%, along with convergence of energy error $\nor{u-u_h}_E$.}
+%\label{fig:discForcing2}
+%\end{figure}
 
-We can similarly examine advection skew to the mesh, another common benchmark problem for convection-diffusion.  We adopt a modification of the standard problem parameters -- here, $\epsilon = 10^{-7}$, $\beta = [.5,1]$, and $f=0$.  Boundary conditions are set such that
-\[
-u = \begin{cases}
-1 \text{ if } y = 0, x< .5\\
-1-y \text{ if } x = 0\\
-0 \text{ otherwise}.
-\end{cases}
-\]
-Mathematically speaking, the considered problem is ill-posed for the standard Galerkin method in the continuous setting -- the boundary condition implies a discontinuity in $u$, such that the solution cannot lie in $H^1$.  The boundary condition is then convected in a manner that is skew to the mesh and forms a boundary layer on part of the outflow.
+%We adopt a modification of the standard problem parameters -- here, $\epsilon = 10^{-7}$, $\beta = [.5,1]$, and $f=0$.  Boundary conditions are set such that
+%\[
+%u = \begin{cases}
+%1 \text{ if } y = 0, x< .5\\
+%1-y \text{ if } x = 0\\
+%0 \text{ otherwise}.
+%\end{cases}
+%\]
+%Mathematically speaking, the considered problem is ill-posed for the standard Galerkin method in the continuous setting -- the boundary condition implies a discontinuity in $u$, such that the solution cannot lie in $H^1$.  The boundary condition is then convected in a manner that is skew to the mesh and forms a boundary layer on part of the outflow.
+%
+%\begin{figure}[!h]
+%\centering
+%\subfigure[Solution $u$]{\includegraphics[scale=.3]{figs/skewToMesh.png}}
+%\subfigure[$u$]{\includegraphics[scale=.313]{figs/skewToMesh3D.png}}
+%\subfigure[Error representation $e$]{\includegraphics[scale=.29]{figs/skewToMeshE.png}}
+%\caption{Advection skew to mesh on a uniform quadratic $32\times 32$ grid of triangles.  The fine scale error representation function $e$ is also shown; note that the multiscale contribution of $e$ is dependent on the form of $\LRp{e,v}_V$, which involves streamline derivatives.}
+%\end{figure}
+%
+%\begin{figure}[!h]
+%\centering
+%\subfigure{\includegraphics[scale=.43]{figs/skewToMeshAdapt.png}}
+%\subfigure{\includegraphics[scale=.43]{figs/skewToMeshAdaptMesh.png}}
+%\caption{Advection skew to mesh after iterations 18 of adaptive mesh refinement.}
+%\end{figure}
+%
+%%\begin{figure}[!h]
+%%\centering
+%%\includegraphics[scale=.45]{figs/rates/eps5e7SkewToMesh.eps}
+%%\caption{Energy error for advection skew to mesh over 18 iterations of adaptive mesh refinement.}
+%%\end{figure}
 
-\begin{figure}[!h]
-\centering
-\subfigure[Solution $u$]{\includegraphics[scale=.3]{figs/skewToMesh.png}}
-\subfigure[$u$]{\includegraphics[scale=.313]{figs/skewToMesh3D.png}}
-\subfigure[Error representation $e$]{\includegraphics[scale=.29]{figs/skewToMeshE.png}}
-\caption{Advection skew to mesh on a uniform quadratic $32\times 32$ grid of triangles.  The fine scale error representation function $e$ is also shown; note that the multiscale contribution of $e$ is dependent on the form of $\LRp{e,v}_V$, which involves streamline derivatives.}
-\end{figure}
-
-\begin{figure}[!h]
-\centering
-\subfigure{\includegraphics[scale=.43]{figs/skewToMeshAdapt.png}}
-\subfigure{\includegraphics[scale=.43]{figs/skewToMeshAdaptMesh.png}}
-\caption{Advection skew to mesh after iterations 18 of adaptive mesh refinement.}
-\end{figure}
-
-\begin{figure}[!h]
-\centering
-\includegraphics[scale=.45]{figs/rates/eps5e7SkewToMesh.eps}
-\caption{Energy error for advection skew to mesh over 18 iterations of adaptive mesh refinement.}
-\end{figure}
-
-We note that the standard boundary condition for advection skew to the mesh is 
-\[
-u = \begin{cases}
-1 \text{ if } x = 0 \text{ or } y = 0 \text{ and } x< .5\\
-0 \text{ otherwise},
-\end{cases}
-\]
-which produces a discontinuity at the upper left hand corner as well.  However, under automatic mesh refinement, extraneous refinements are placed at this corner's discontinuity.  It is possible to avoid such an issue either by tailoring a mesh refinement scheme to avoid the corner or by adopting a regularized boundary condition by introducing a mesh-dependent ``ramped'' boundary condition which approximates the discontinuity.  This was done for for the lid-driven cavity flow problem under Stokes flow in \cite{stokesDPG}.  
-
-We avoid both the above ``fixes'' in order to more cleanly demonstrate the behavior of automatic adaptive mesh refinement; however, we note that under the uniform meshes in Figure~\ref{fig:skewUnif}, or under adaptive refinement schemes that avoids the corner singularity, the method appears to deliver similar results to SUPG.  
-\begin{figure}[!h]
-\centering
-\subfigure[$p=1$]{\includegraphics[scale=.43]{figs/skewToMeshP1Unif.png}}
-\subfigure[$p=2$]{\includegraphics[scale=.43]{figs/skewToMeshP2Unif.png}}
-\caption{Solution $u$ for advection skew to mesh with the upper-left hand corner discontinuity under both linear and quadratic uniform meshes.}
-\label{fig:skewUnif}
-\end{figure}
-
+%We note that the standard boundary condition for advection skew to the mesh is 
 
 %\subsection{A 3D model problem}
 %
@@ -625,19 +661,51 @@ We avoid both the above ``fixes'' in order to more cleanly demonstrate the behav
 %
 %%\textcolor{red}{Does Hughes have a reference for the weakening of divergence in higher dimensions?}.  
 
+\subsection{Weak boundary conditions and comparison to other methods}
+
+We close by introducing a method for the weak imposition of boundary conditions.  For stability reasons, we modified the variational formulation with an additional boundary term on the inflow boundary.  If we take instead 
+\begin{align*}
+\delta u, u &\in H^{\frac{3}{2}+\delta}(\Omega) \cap H^1_{\rm in} \\
+e,v &\in H^{\frac{3}{2}+\delta}(\Omega) \cap H^1_{\rm out}
+\end{align*}
+where $H^1_{\rm in} \coloneqq \LRc{v\in H^1(\Omega) s.\ t.\ \left.v\right|_{\Gamma_{\rm in}} = 0}$, we can weakly impose the outflow boundary by modifying the variational formulation used in the saddle point system in Section~\ref{sec:saddlePoint}.  The resulting variational formulation is 
+\[
+b(u,v) = (\Grad u, \beta v + \epsilon \Grad v)_{\L} - \epsilon\int_{\Gamma_{\rm in}} \pd{u}{n}v - \epsilon\int_{\Gamma_{\rm out}} \pd{v}{n} u = (f,v)_{\L}, \quad \forall v \in V_h.
+\]
+Figure~\ref{fig:weakBCs} demonstrates the release of the outflow boundary condition as ${\epsilon}$ vanishes relative to the mesh size: for a sufficiently resolved mesh with $\epsilon \approx h$, the boundary condition activates, but releases as the ratio $\epsilon/h \rightarrow 0$.  Taking $\epsilon = 0$ convergences to a stable method for the pure convection equation.  
+%The nonsymmetric Nitsche was shown to be stable without a penalty term in \cite{penaltyFreeNitsche}; however, 
+\begin{figure}
+\centering
+\subfigure{\includegraphics[width = .24\textwidth]{figs/weakBCs/eps1e1.png}}
+\subfigure{\includegraphics[width = .24\textwidth]{figs/weakBCs/eps1e2.png}}
+\subfigure{\includegraphics[width = .24\textwidth]{figs/weakBCs/eps1e3.png}}
+\subfigure{\includegraphics[width = .24\textwidth]{figs/weakBCs/eps1e4.png}}
+\caption{Weak boundary imposition for $\epsilon = 10^{-1}, 10^{-2}, 10^{-3}, 10^{-4}$.}
+\label{fig:weakBCs}
+\end{figure}	
+
+Figure~\ref{fig:supg_comparison} compares the convergence of $L^2$ error with SUPG\footnote{The stabilization parameter is taken to be $\tau = \frac{h}{\LRb{\beta}(p+1)}$ in this comparison.} to this method under both the strong and weak imposition of boundary conditions.  While the rate of convergence does not change, the imposition of a weak outflow boundary condition greatly decreases the $L^2$ error.  We note that the asymptotic rate of convergence is less than the optimal rate for $p=4$; however, increasing to $\triangle p = 2$ recovers the optimal rate.  
+\begin{figure}
+\centering
+\subfigure{\includegraphics[width = .475\textwidth]{figs/rates/eps1e0Rates_weakBC.eps}}
+\subfigure{\includegraphics[width = .475\textwidth]{figs/rates/supg_bc_comparison.eps}}
+\caption{Comparison between methods under uniform refinement for $p=1$ and $\epsilon=10^{-4}$.}
+\label{fig:supg_comparison}
+\end{figure}	
+
 \section{Conclusions and future direction}
 
-We have presented a higher order adaptive $H^1$-conforming method for convection-diffusion problems for very small $\epsilon$, and have made connections to both the DPG method as well as the method of Cohen, Dahmen and Welper.  The method has also been shown to be derivable in the Variational Multiscale framework as well, and is distinguished from traditional VMS methods in its definition of the fine-scale space and problem.  Unlike standard stabilized $H^1$ methods, there are no stabilization parameters.  However, unlike the DPG methods of both Demkowicz and Gopalakrishnan, as well as the method of Broersen and Stevenson, this method is easily implementable within current finite element codes in arbitrary spatial dimensions.
+We have presented a higher order adaptive $H^1$-conforming method for convection-diffusion problems for very small $\epsilon$, and have made connections to both the DPG method as well as the method of Cohen, Dahmen and Welper.  The method has also been shown to be derivable in the Variational Multiscale framework as well, and is distinguished from traditional VMS methods in its definition of the fine-scale space and problem.  Unlike standard stabilized methods, there are no stabilization parameters to specify.  %However, unlike the DPG methods of both Demkowicz and Gopalakrishnan, as well as the method of Broersen and Stevenson, this method is easily implementable within current finite element codes in arbitrary spatial dimensions.
 
 We note that, while the method displays similarities to SUPG, we do not observe nodal exactness in 1D.  The two methods differ in that we do not work directly with coarse scales defined by the $H^1$ inner product; unless we can induce an energy inner product such that $\LRp{u_h,u'}_E = \LRp{u_h,u'}_{H^1_0}$, then we should not expect nodal exactness in 1D.  However, in higher space dimensions, the behavior of the method is qualitatively very similar to SUPG.  
 
-We hope to explore in future research both additional improvements on the method and the application of this method to other problem frameworks and settings, a few of which are described in the following sections.  
+%We hope to explore in future research both additional improvements on the method and the application of this method to other problem frameworks and settings, a few of which are described in the following sections.  
 
-\subsection{$hpr$-refinement}
-
-Since this method is derived from the same variational principles as DPG, it should likewise be automatically inf-sup stable for arbitrary $hp$ meshes as well.  $hp$-refinement is of interest due to the fact that, under proper choices between $h$ and $p$ refinement, exponential convergence rates are possible, and have been observed for several model problems \cite{demkowicz2006computing}.  Intelligent $hp$-adaptive strategies could also offer more mathematically motivated alternatives to CFD approaches such as flux limiters, which effectively limit the order of approximation in areas of singularities and high gradients.  
-
-Additionally, the method automatically extends to incorporate anisotropic elements and $r$-refinement as well, similar to ALE methods.  The combination of these two methods has been shown to produce very fine-resolution results at a competitive computational cost for flow problems with very small viscosity \cite{AlmeidaAnisotropy}.  
+%\subsection{$hp$-refinement}
+%
+Since this method is derived from the same variational principles as DPG, it should likewise be automatically inf-sup stable for arbitrary $hp$ meshes as well.  $hp$-refinement is of interest due to the fact that, under proper choices between $h$ and $p$ refinement, exponential convergence rates are possible, and have been observed for several model problems \cite{demkowicz2006computing}.  %Intelligent $hp$-adaptive strategies could also offer more mathematically motivated alternatives to CFD approaches such as flux limiters, which effectively limit the order of approximation in areas of singularities and high gradients.  
+%
+%Additionally, the method automatically extends to incorporate anisotropic elements and $r$-refinement as well, similar to ALE methods.  The combination of these two methods has been shown to produce very fine-resolution results at a competitive computational cost for flow problems with very small viscosity \cite{AlmeidaAnisotropy}.  
 
 \subsection{Computational feasibility}
 
@@ -652,9 +720,10 @@ The cost of explicitly discretizing the fine scale error representation $e\in V_
 %where $f$ and $B$ are the load and overdetermined stiffness matrix under $V_h$, and $A$ is the Gram matrix/discrete Riesz map associated with the inner product $\LRp{v,\delta v}_V$.  One approach is to explore possibilities for rapid inversion of $A$.  For example, it is possible to choose $V_h$ to simply be the space of piecewise linears enriched with bubbles -- higher order degrees of freedom could be condensed out, resulting in a system for $e$ with the same number of unknowns as $u$.  The resulting matrix-vector products required to form the Schur complement could be parallelized as well.  
 
 %One additional possibility would be the exploration of iterative methods for the Schur complement -- the matrix is positive definite, and assembling a matrix-vector product could be done efficiently under a good preconditioner for the symmetric positive-definite matrix $\bs{A}^{-1}$.  Preliminary results demonstrate effective speedup for uniform meshes of piecewise linears in 2D using standard preconditioners (ILU, block Jacobi, AMG), and suggest that a discretization of $V_h$ using a $h$-refined fine mesh could be possible; however, more work would be required to develop preconditioners for high order adaptive meshes.  
-\item Another possibility would be to solve the saddle point problem using an Uzawa method \cite{uzawa}, which would decouple the saddle point system into two problems, each involving only degrees of freedom for $e$ or for $u$.  The solution of these two problems feeds an iterative procedure which can converge to the solution of the saddle point problem.  Again, effective use of an Uzawa algorithm would require a good preconditioner for $\bs{A}$ under high-order refined meshes.
+%\item Another possibility would be to solve the saddle point problem using an Uzawa method \cite{uzawa}, which would decouple the saddle point system into two problems, each involving only degrees of freedom for $e$ or for $u$.  The solution of these two problems feeds an iterative procedure which can converge to the solution of the saddle point problem.  Again, effective use of an Uzawa algorithm would require a good preconditioner for $\bs{A}$ under high-order refined meshes.
+\item Dahmen, Huang, Schwab, and Welper utilize an iterative Uzawa method for the pure convection equation, which allows for the separate solution of two symmetric, coercive problems for $u$ and $e$ \cite{dahmenConvection}.  Dahmen et al.\ showed that the trial norm induced by their choice of test norm is precisely the $L^2$ norm, and utilized this in their Uzawa iteration.  However, to use an Uzawa iteration for the convection-diffusion equation for $\epsilon > 0$ would require an explicit expression of the induced trial norm.  
 \item We hope to explore alternative discretizations for both $U_h$ and $V_h$ in order to minimize degrees of freedom or solution for in the overall system.  A few examples of nonstandard discretizations include higher order continuity basis functions (splines and NURBS \cite{NURBSorig}), and discontinuous functions (DG).  Preliminary experiments have yielded promising results in 1D under the combination of higher-continuity and $C_0$ bases for $U_h$ and $V_h$, respectively.  We hope to further explore intelligent mixing of discretizations for trial and test spaces in future experiments.  
-\item The DPG method achieves computational efficiency by block-diagonalizing $\bs{A}$ using discontinuous test functions.  The same method could be applied to the $H^1$ setting for convection-diffusion problems at the cost of introducing inter-element fluxes representing the trace on the boundary of an element resulting from integration by parts of the viscous term.  An alternative along the same lines would be to consider block diagonalization of $\bs{A}$ under a patch-based decomposition, such as FETI or one of its variants \cite{FETI1,FETI2}.  
+\item The DPG method achieves computational efficiency by block-diagonalizing $\bs{A}$ using discontinuous test functions.  The same method could be applied to the $H^1$ setting for convection-diffusion problems at the cost of introducing inter-element fluxes representing the trace on the boundary of an element resulting from integration by parts of the viscous term, similarly to the primal DPG method \cite{primalDPG}.  An alternative along the same lines would be to consider block diagonalization of $\bs{A}$ under a patch-based decomposition, such as FETI or one of its variants \cite{FETI1,FETI2}.  Both of these methods would allow for efficient inversion of $\bs{A}$ in the computation of the symmetric positive-definite Schur complement $\bs{B}^T \bs{A}^{-1} \bs{B}$ at the cost of introducing additional hybrid unknowns on element faces.  This method is akin to approximating the error representation $e$ using a nonconforming primal hybrid finite element method \cite{raviart1977primal}.  
 \end{itemize}
 
 \section{Acknowledgements}

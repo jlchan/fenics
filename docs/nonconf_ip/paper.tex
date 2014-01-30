@@ -208,7 +208,7 @@ The first condition then requires only a mesh-independent Poincare inequality fo
 \nor{v}_{\Oh} &\leq C\LRp{\nor{\grad v}_{\Oh} + \nor{\jump{v}}_{\Gh}}
 \end{align*}
 
-Both the primal and original $C_0$ mixed DPG methods for convection-diffusion display optimal rates, and display nearly identical $L^2$ errors on the same mesh.  Below are comparisons of $L^2$-errors under uniform refinement.  The flux variable $\lambda$ is taken to be the trace of Raviart-Thomas elements of equal order to the field variables $u$ (which gives a polynomial degree of $p-1$ on the edge).  If we decrease our polynomial degree to be Raviart-Thomas elements of order $p-1$ instead of $p$, the rate of convergence falls to $h^p$ for $L^2$ errors.\footnote{In general, the optimal rate of convergence appears to be limited to $p_f+1$.}
+Both the primal and original $C_0$ mixed DPG methods for convection-diffusion display optimal $L^2$ error convergence rates of $h^{p+1}$, and display nearly identical $L^2$ errors on the same mesh, though the nonconforming discretization delivers a noticably smaller $L^2$ error for $p=1$.  Below are comparisons of $L^2$-errors under uniform refinement.  The flux variable $\lambda$ is taken to be the trace of Raviart-Thomas elements of equal order to the field variables $u$ (which gives a polynomial degree of $p-1$ on the edge).  If we decrease our polynomial degree to be Raviart-Thomas elements of order $p-1$ instead of $p$, the rate of convergence falls to $h^p$ for $L^2$ errors.\footnote{In general, the optimal rate of convergence appears to be limited to $p_f+1$.}
 %
 %%p =1
 %conf_rates =  [1.8345732590626442, 1.956593598614242, 1.9889774729025818]
@@ -252,6 +252,51 @@ Both the primal and original $C_0$ mixed DPG methods for convection-diffusion di
   }
   \caption{Rates of convergence for conforming vs nonconforming discretizations.}
 \end{figure}
+
+\subsection{Example: Anisotropic Poisson's equation with first order term} 
+
+We consider the equation with $\alpha > 0$
+\[
+-\div(K\grad u) + \alpha u = f
+\]
+for the specific example 
+\[
+K = \beta\beta^T + \epsilon I
+\]
+with $\epsilon \geq 0$.  The conforming and nonconforming formulations are given similarly to before, with $\lambda$ as the trace of Raviart-Thomas elements.  We note that
+\[
+\nor{u}_{\Oh}^2 = \nor{\beta\cdot\grad u}^2 + \epsilon\nor{\grad u}^2 + \nor{u}^2
+\]
+which implies that, as $\epsilon\rightarrow 0$, the trace of $u$ on element boundaries where $\beta_n = 0$ becomes ill-defined.  
+
+The first stability condition implied by the Poincare inequality on a nonconforming space is dependent on the constant $C$.  It's possible to derive a similar Poincare inequality for $\nor{u}_{\Oh}$, though the constant will likely be proportional to $\epsilon^{-1}$, which causes the degradation seen in Figure~\ref{fig:aniso_poisson} and Table~\ref{tab:aniso_poisson}.  We observe non-optimal rates of convergence for both the conforming and nonconforming method, but the $L^2$ error in the nonconforming method is much higher.
+
+\begin{remark}
+To Fred: I believe this poor performance when $\epsilon$ is small is responsible for the loss of streamline diffusion stability.  I'm not sure if DPG with the ultra-weak formulation delivers better: we tried a second Erikkson-Johnson problem to test the behavior of DPG with respect to a near-internal layer (see \cite{DPGrobustness2,DPGrobustness} for details - we approximate a discontinuity with 25 terms of a Fourier series and used that inflow data to drive the Erikkson-Johnson problem).  It appears to behave pretty robustly for that problem over a range of $\epsilon$ as well, though the fact that it was only a ``near-discontinuity'' may have helped.  
+\end{remark}
+
+\begin{figure}
+\centering
+\includegraphics[width=.6\textwidth]{figs/aniso_poisson_rates.eps}
+  \caption{$L^2$ errors for conforming vs nonconforming discretizations with $\epsilon = 10^{-4}$.}
+  \label{fig:aniso_poisson}
+\end{figure}
+
+\begin{figure}
+\centering
+  \begin{tabular}{| l || c | r |}
+   \hline
+    Order & Conforming & Non-conforming\\
+    \hline
+    $p=1$ & 1.98810 &  0.78235\\ \hline
+    $p=2$ & 2.21456 & 3.46313\\ \hline
+    $p=3$ & 3.28074 & 3.70192\\
+    \hline
+  \end{tabular}
+  \caption{Rates of convergence for conforming vs nonconforming discretizations for $\epsilon = 10^{-4}$.}
+  \label{tab:aniso_poisson}
+\end{figure}
+
 
 %The first condition for stability holds if we use two modifications of two lemmas for locally harmonic functions (i.e. minimum energy extensions of functions supported on the mesh skeleton) from \cite{analysisDPG}
 %\cite{primalDPG}: 

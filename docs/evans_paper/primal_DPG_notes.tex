@@ -131,10 +131,10 @@
 
 \newtheorem{remark}{Remark}
 
-\title{Primal DPG formulation for convection-diffusion}
-\author{}
-\date{}
+\title{Notes on a primal DPG formulation for convection-diffusion}
 \begin{document}
+
+\maketitle
 
 Our original variational formulation for the convection-diffusion problem is 
 \[
@@ -142,12 +142,15 @@ b(u,v) = \LRa{\beta_n u,v}_{\Gamma} + \LRp{u,-\beta \grad v} - \epsilon \LRa{\pd
 \]
 where 
 \begin{align*}
-\Gamma_{\rm in}\coloneqq \LRc{x\in \partial \Omega: \beta\cdot\vec{n}(x) < 0}\\
+\Gamma_{\rm in}\coloneqq \LRc{x\in \partial \Omega: \beta\cdot\vec{n}(x) \leq 0}\\
 \Gamma_{\rm out}\coloneqq \LRc{x\in \partial \Omega: \beta\cdot\vec{n}(x) > 0}.
 \end{align*}
-Boundary conditions can be applied in either a strong or weak fashion in this formulation.  
+Boundary conditions can be applied in either a strong or weak fashion in this formulation.  The test norm is taken to be 
+\[
+\nor{v}^2_V \coloneqq \nor{\beta\grad v}^2 + \epsilon\nor{\grad v}^2 + \nor{v}^2
+\]
 
-This formulation is derived under the assumption that $v$ is $C_0$ continuous throughout the domain.  However, if we break that continuity and require only that $v\in H^1(K)$ (i.e. in $H^1$ locally), we can derive a different variational formulation.  Integrating by parts, we pick up a boundary term over each element, such that our variational form becomes
+This formulation is derived under the assumption that $v$ is $C_0$ continuous throughout the domain.  However, if we break that continuity and require only that $v\in H^1(K)$ (i.e. in $H^1$ locally), we can derive a different variational formulation, similar to one introduced in \cite{primalDPG}.  Integrating by parts, we pick up a boundary term over each element, such that our variational form becomes
 \begin{align*}
 b\LRp{\LRp{u,\fnh},v} &= \LRa{\beta_n u,v}_{\Gamma} + \LRp{u,-\beta \grad v} - \LRa{\fnh,\jump{v}}_{\Gh^0} - \epsilon \LRa{\pd{u}{n},v}_{\Gamma} + \epsilon\LRp{\Grad u, \Grad v}_{\L} \\
 &= \LRp{f,v}_{\L} , \quad \forall v \in H^1_\outsub.
@@ -167,31 +170,91 @@ This is equivalent to a constrained projection/Riesz inversion
 \end{align*}
 where $B: U\rightarrow V'$ is defined through $\LRa{Bu,v} = b(u,v)$.  
 
-If we choose a broken test space $\LRc{ v\in \L, \left.v\right|_K \in V(K)}$, we can enforce continuity between elements by penalizing the jumps of $e$ using a Lagrange multiplier method
+If we choose a broken test space $\LRc{ v\in \L, \left.v\right|_K \in V(K)}$, we can enforce continuity between elements by penalizing the jumps of $e$ using a Lagrange multiplier method 
 \begin{align*}
 (e,v)_V + b(u,v) + \LRa{\lambda, \jump{v}}_{\Gh}&= l(v)\\
 b(\delta u,e) + \LRa{\delta \lambda, \jump{e}}_{\Gh} &= 0.
 \end{align*}
-where $\lambda$ is a function with support only on $\Gh$, the mesh skeleton.  This is equivalent to the mixed DPG formulation under the bilinear form $b_h((u,\fnh),v) \coloneqq b(u,v) + \LRa{\fnh, \jump{v}}_{\Gh}$, with additional trace unknowns $\fnh$.  The advantage of this formulation is that the degrees of freedom for $e$ can be condensed out and eliminated, leaving a positive definite system for $u$ and $\fnh$, and is equivalent to locally computing optimal test functions.  
+where $\lambda$ is a function with support only on $\Gh$, the mesh skeleton.  This is equivalent to the mixed DPG formulation under the bilinear form $b_h((u,\fnh),v) \coloneqq b(u,v) + \LRa{\fnh, \jump{v}}_{\Gh}$, with additional trace unknowns $\fnh$.  The advantage of this formulation is that the degrees of freedom for $e$ can be condensed out and eliminated, leaving a positive definite system for $u$ and $\fnh$, and is equivalent to locally computing optimal test functions.  This idea for the discretization of $e$ is very similar to the primal hybrid finite element method introduced in \cite{raviart1977primal}.  
 
 \section{Initial numerical results}
 
+We refer to the mixed formulation of the DPG method using $C_0$ test spaces as the $C_0$ mixed (DPG) method.  The formulation with Lagrange multipliers as unknowns on the mesh skeleton will be referred to as the primal (DPG) method.  
+
+\subsection{Erikkson-Johnson problem}
 Both the primal and original $C_0$ mixed DPG methods for convection-diffusion display optimal rates, and display nearly identical $L^2$ errors on the same mesh.  Below are comparisons of $L^2$-errors under uniform refinement.  The flux variable $\fnh$ is taken to be the trace of Raviart-Thomas elements of equal order to the field variables $u$ (this can be relaxed to be $p-1$, where $p$ is the order of $u$).  
 
 \begin{figure}[!h]
 \centering
-\subfigure[Primal DPG]{\includegraphics[width = .49\textwidth]{figs/matlab/primal_eps1e0_h.eps}}
-\subfigure[Mixed $C_0$ DPG]{\includegraphics[width = .49\textwidth]{figs/matlab/mixed_eps1e0_h.eps}}
-%\subfigure[$\epsilon = 1e-4$]{\includegraphics[width = .49\textwidth]{figs/matlab/primal_eps1e4_h.eps}}
+\subfigure[Primal DPG]{\includegraphics[width = .49\textwidth]{figs/matlab/primal_eps1e0.eps}}
+\subfigure[Mixed $C_0$ DPG]{\includegraphics[width = .49\textwidth]{figs/matlab/mixed_eps1e0.eps}}
 \caption{Rates for primal and $C_0$ mixed DPG method for $\epsilon = 1.0$.}
-\label{fig:comparison1D}
 \end{figure}
 
 \begin{figure}[!h]
 \centering
-\subfigure[Primal DPG]{\includegraphics[width = .49\textwidth]{figs/matlab/primal_eps1e4_h.eps}}
-\subfigure[Mixed $C_0$ DPG]{\includegraphics[width=.49\textwidth]{figs/matlab/mixed_eps1e4_h.eps}}
+\subfigure[Primal DPG]{\includegraphics[width = .49\textwidth]{figs/matlab/primal_eps1e4.eps}}
+\subfigure[Mixed $C_0$ DPG]{\includegraphics[width=.49\textwidth]{figs/matlab/mixed_eps1e4.eps}}
 \caption{Rates for primal and $C_0$ mixed DPG methods for $\epsilon = 1e-4$}
 \end{figure}
+
+\subsection{Crosswind diffusion}
+
+The primal DPG method appears to suffer from over-diffusion in the crosswind direction.  We illustrate this by using a model problem for pure convection ($\epsilon = 0$), where $\beta = [.5,1]$ and $f=0$. Boundary conditions are set such that
+\[
+u = \begin{cases}
+1 \text{ if } y = 0, x< .5\\
+1-y \text{ if } x = 0\\
+\end{cases}
+\]
+The discontinuous inflow is convected in a non-diffusive manner across the domain.  
+\begin{figure}[!h]
+\centering
+\subfigure[$p = 1$, $p_f = 1$, $\triangle p = 1$]{\includegraphics[width = .32\textwidth]{figs/matlab/u_pf1_dp1.png}}
+\subfigure[$p = 1$, $p_f = 2$, $\triangle p = 1$]{\includegraphics[width = .32\textwidth]{figs/matlab/u_pf2_dp1.png}}
+\subfigure[$p = 1$, $p_f = 2$, $\triangle p = 2$]{\includegraphics[width = .32\textwidth]{figs/matlab/u_pf2_dp2.png}}
+\caption{Comparisons of solutions for the primal DPG method for pure convection with varying orders for fluxes and test space.}
+\label{fig:diffuse}
+\end{figure}
+Figure~\ref{fig:diffuse} shows the result of varying choices of $p_f$, the order of the flux variable, and $\triangle p$, the degree of enrichment in the space.  Note that, for $p_f = p+\triangle p$, we recover exactly a $C_0$-conforming discretization of the test space (simply note that the error orthogonality condition implies that $\LRa{\delta \fnh,\jump{e}}_{\Gh^0} = 0$.  Choosing $\delta \fnh = \jump{e}$ shows that $\jump{e} = 0$).  Notice also that, if we approximate optimal test functions with an norder $p+2$ polynomial space and the order of the flux variable is only $p+1$, we still end up with an overly diffusive method.  
+
+We believe this to be related to the fact that, for $\epsilon = 0$, the test norm becomes 
+\[
+\nor{v}^2_V \coloneqq \nor{\beta\grad v}^2 + \nor{v}^2
+\]
+which does not yield a well-defined trace when $\beta_n = 0$ (in the cross-stream directions).  This is further confirmed when comparing the primal hybrid method of \cite{raviart1977primal} to a standard $C_0$ finite element method for a manufactured solution of $\LRp{v,\delta v}_V = \LRp{f,v}$; as $\epsilon \rightarrow 0$, the error in the primal hybrid solution becomes much larger (two orders of magnitude larger for $p = 3$) than the error in the $C_0$ solution.  
+
+\subsection{DPG with the ultra-weak formulation}
+
+The DPG method with ultra-weak variational formulation \cite{DPG1,DPG2} behaves very similarly.  We take again the pure convection equation and discretize it with $u \in \L$ instead of $u \in C_0(\Omega)$.  The test norm and variational form are identical to the previous example.  The problem is implemented in Camellia \cite{Camellia}.  
+
+Figures~\ref{fig:dpg_diffuse} and \ref{fig:dpg_nondiffuse} illustrate the effect of increasing the degree of enrichment of the test space.  In Figure~\ref{fig:dpg_diffuse}, the field and flux variable are set to a fixed polynomial order while the test space order is increased, which, as observed previously, produces an overly diffusive solution.  In Figure~\ref{fig:dpg_nondiffuse}, the flux polynomial order is increased along with the test space order, and produces minimally diffusive solutions that approach the $L^2$ best approximation as $\triangle p$ increases.  
+
+\begin{figure}[!h]
+\centering
+\subfigure[$p = 1$, $p_f = 1$, $\triangle p = 1$]{\includegraphics[width = .32\textwidth]{figs/ultraweak/conv_dp0.png}}
+\subfigure[$p = 1$, $p_f = 1$, $\triangle p = 2$]{\includegraphics[width = .32\textwidth]{figs/ultraweak/conv_dp1.png}}
+\subfigure[$p = 1$, $p_f = 1$, $\triangle p = 3$]{\includegraphics[width = .32\textwidth]{figs/ultraweak/conv_dp2.png}}
+%\subfigure[$\triangle p = 4$]{\includegraphics[width = .475\textwidth]{figs/ultraweak/conv_dp3.png}}
+\caption{Comparisons of solutions ultra-weak DPG for pure convection with fixed flux order and increasing test space order.  Image colors are scaled to the solution for $\triangle p=1$.}
+\label{fig:dpg_diffuse}
+\end{figure}
+
+\begin{figure}[!h]
+\centering
+\subfigure[$p = 1$, $p_f = 2$, $\triangle p = 1$]{\includegraphics[width = .32\textwidth]{figs/ultraweak/conv_df_dp0.png}}
+\subfigure[$p = 1$, $p_f = 3$, $\triangle p = 2$]{\includegraphics[width = .32\textwidth]{figs/ultraweak/conv_df_dp1.png}}
+\subfigure[$p = 1$, $p_f = 4$, $\triangle p = 3$]{\includegraphics[width = .32\textwidth]{figs/ultraweak/conv_df_dp2.png}}
+%\subfigure[$\triangle p = 4$]{\includegraphics[width = .475\textwidth]{figs/ultraweak/conv_df_dp3.png}}
+\caption{Comparisons of solutions for ultra-weak DPG for pure convection with increasing flux and test space order.  Image colors are scaled to the solution for $\triangle p=1$.}
+\label{fig:dpg_nondiffuse}
+\end{figure}
+
+\section{Conclusions}
+
+These three numerical experiments appear to imply that, for the DPG method with optimal test functions, setting $p_f = p$ may control error along the streamline in a very strong manner, but that $p_f = p+\triangle p$ is required for control over error in the cross-stream direction.  
+
+\bibliographystyle{unsrt}
+\bibliography{paper}
 
 \end{document}

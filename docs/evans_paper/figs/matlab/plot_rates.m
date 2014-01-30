@@ -1,5 +1,5 @@
 
-function plot_rates(A,name)
+function plot_rates(A)
 % % First order solution
 % A{1} = [1 0.015625000000000 0.009092198566947
 % 1 0.007812500000000   0.001941095878590
@@ -29,8 +29,7 @@ function plot_rates(A,name)
 N = length(A);
 order = zeros(N,1);
 %figure
-axes('fontsize',14);
-hold on;
+%axes('fontsize',14);
 kValues = zeros(N,1); % will hold 1,2,3,...
 min_x = 1;
 max_x = 1;
@@ -39,8 +38,8 @@ for n=1:N
     h = A{n}(:,2); err = sqrt(sum(A{n}(:,3:end).^2,2));
     % slope
     order(n) = (log(err(end))-log(err(end-1)))/(log(h(end))-log(h(end-1)));
-    loglog(h,err,'linewidth',2.0)
-    
+    loglog(h,err,'o-','linewidth',2.0)
+    hold on;
     % Draw the solution order
     text(h(1)+5.e-2,err(1),strcat('k = ',num2str(A{n}(1,1))),'FontSize',14)
     
@@ -67,8 +66,7 @@ for n=1:N
 end
 min_x = min_x - 0.2 * min_x;
 xlim([min_x max_x]);
-set(gca,'XScale','log')
-set(gca,'YScale','log')
+set(gca,'fontsize',14)
+%set(gca,'XScale','log')
+%set(gca,'YScale','log')
 xlabel('h'); ylabel('error in L^2-norm');
-print(gcf,'-depsc',strcat(name, '_h'))
-print(gcf,'-dpng',strcat(name, '_h'))
